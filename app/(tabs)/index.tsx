@@ -15,9 +15,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useTheme } from '../../hooks/useTheme';
 import { MOCK_LISTINGS } from '../../services/mockData';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.25;
 
 interface Listing {
@@ -41,6 +42,7 @@ const DISTANCES = ['Any', '5 miles', '10 miles', '25 miles', '50 miles'];
 export default function DiscoverScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { colors } = useTheme();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showWant, setShowWant] = useState(false);
   const [showSkip, setShowSkip] = useState(false);
@@ -138,34 +140,34 @@ export default function DiscoverScreen() {
 
   if (!currentListing) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top }]}>
-        <Text style={styles.emptyText}>No more items to discover</Text>
+      <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
+        <Text style={[styles.emptyText, { color: colors.textMuted }]}>No more items to discover</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity
-          style={styles.headerButton}
+          style={[styles.headerButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
           onPress={() => router.push('/(tabs)/profile')}
         >
-          <MaterialIcons name="person" size={24} color="#fff" />
+          <MaterialIcons name="settings" size={24} color={colors.text} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>Discovery</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Barter</Text>
           <View style={styles.liveFeedBadge}>
-            <View style={styles.liveDot} />
-            <Text style={styles.liveFeedText}>LIVE FEED</Text>
+            <View style={[styles.liveDot, { backgroundColor: colors.primary }]} />
+            <View style={[styles.liveDot, { backgroundColor: colors.textMuted, marginLeft: 4 }]} />
           </View>
         </View>
         <TouchableOpacity
-          style={styles.headerButton}
+          style={[styles.headerButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
           onPress={() => setShowFilters(true)}
         >
-          <MaterialIcons name="tune" size={24} color="#fff" />
+          <MaterialIcons name="tune" size={24} color={colors.text} />
         </TouchableOpacity>
       </View>
 
@@ -277,7 +279,7 @@ export default function DiscoverScreen() {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.swipeHint}>
+        <Text style={[styles.swipeHint, { color: colors.textMuted }]}>
           SWIPE RIGHT TO TRADE  •  SWIPE LEFT TO SKIP
         </Text>
       </View>
@@ -290,36 +292,38 @@ export default function DiscoverScreen() {
         onRequestClose={() => setShowFilters(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { paddingBottom: insets.bottom + 24 }]}>
+          <View style={[styles.modalContent, { paddingBottom: insets.bottom + 24, backgroundColor: colors.backgroundLight }]}>
             {/* Modal Header */}
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Filters</Text>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Filters</Text>
               <TouchableOpacity
-                style={styles.modalClose}
+                style={[styles.modalClose, { backgroundColor: colors.surface }]}
                 onPress={() => setShowFilters(false)}
               >
-                <MaterialIcons name="close" size={24} color="#fff" />
+                <MaterialIcons name="close" size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
               {/* Category Section */}
               <View style={styles.filterSection}>
-                <Text style={styles.filterSectionTitle}>Category</Text>
+                <Text style={[styles.filterSectionTitle, { color: colors.textMuted }]}>Category</Text>
                 <View style={styles.filterChips}>
                   {CATEGORIES.map((cat) => (
                     <TouchableOpacity
                       key={cat}
                       style={[
                         styles.filterChip,
-                        selectedCategory === cat && styles.filterChipActive,
+                        { backgroundColor: colors.surface, borderColor: colors.border },
+                        selectedCategory === cat && { backgroundColor: colors.primary, borderColor: colors.primary },
                       ]}
                       onPress={() => setSelectedCategory(cat)}
                     >
                       <Text
                         style={[
                           styles.filterChipText,
-                          selectedCategory === cat && styles.filterChipTextActive,
+                          { color: colors.textSecondary },
+                          selectedCategory === cat && { color: colors.textInverse },
                         ]}
                       >
                         {cat}
@@ -331,21 +335,23 @@ export default function DiscoverScreen() {
 
               {/* Distance Section */}
               <View style={styles.filterSection}>
-                <Text style={styles.filterSectionTitle}>Distance</Text>
+                <Text style={[styles.filterSectionTitle, { color: colors.textMuted }]}>Distance</Text>
                 <View style={styles.filterChips}>
                   {DISTANCES.map((dist) => (
                     <TouchableOpacity
                       key={dist}
                       style={[
                         styles.filterChip,
-                        selectedDistance === dist && styles.filterChipActive,
+                        { backgroundColor: colors.surface, borderColor: colors.border },
+                        selectedDistance === dist && { backgroundColor: colors.primary, borderColor: colors.primary },
                       ]}
                       onPress={() => setSelectedDistance(dist)}
                     >
                       <Text
                         style={[
                           styles.filterChipText,
-                          selectedDistance === dist && styles.filterChipTextActive,
+                          { color: colors.textSecondary },
+                          selectedDistance === dist && { color: colors.textInverse },
                         ]}
                       >
                         {dist}
@@ -358,10 +364,10 @@ export default function DiscoverScreen() {
 
             {/* Apply Button */}
             <TouchableOpacity
-              style={styles.applyButton}
+              style={[styles.applyButton, { backgroundColor: colors.primary }]}
               onPress={() => setShowFilters(false)}
             >
-              <Text style={styles.applyButtonText}>Apply Filters</Text>
+              <Text style={[styles.applyButtonText, { color: colors.textInverse }]}>Apply Filters</Text>
             </TouchableOpacity>
           </View>
         </View>

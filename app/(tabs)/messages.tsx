@@ -13,6 +13,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useTheme } from '../../hooks/useTheme';
 import { MOCK_CONVERSATIONS } from '../../services/mockData';
 
 interface Conversation {
@@ -38,9 +39,10 @@ interface Conversation {
 export default function MessagesScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeFilter, setActiveFilter] = useState('all');
   const [showSearch, setShowSearch] = useState(false);
@@ -100,7 +102,7 @@ export default function MessagesScreen() {
 
   const renderConversation = ({ item }: { item: Conversation }) => (
     <TouchableOpacity
-      style={styles.conversationCard}
+      style={[styles.conversationCard, { backgroundColor: colors.cardBg, borderColor: colors.border }]}
       onPress={() => router.push(`/chat/${item.id}` as any)}
       activeOpacity={0.7}
     >
@@ -108,11 +110,11 @@ export default function MessagesScreen() {
       <View style={styles.imageContainer}>
         <Image
           source={{ uri: item.offer?.listing.images[0] || 'https://via.placeholder.com/80' }}
-          style={styles.itemImage}
+          style={[styles.itemImage, { backgroundColor: colors.surface }]}
         />
         {item.unreadCount > 0 && (
-          <View style={styles.unreadBadge}>
-            <Text style={styles.unreadText}>{item.unreadCount}</Text>
+          <View style={[styles.unreadBadge, { backgroundColor: colors.primary }]}>
+            <Text style={[styles.unreadText, { color: colors.textInverse }]}>{item.unreadCount}</Text>
           </View>
         )}
       </View>
@@ -128,33 +130,33 @@ export default function MessagesScreen() {
             </Text>
           </View>
           {item.lastMessage && (
-            <Text style={styles.timeText}>
+            <Text style={[styles.timeText, { color: colors.textMuted }]}>
               {formatTime(item.lastMessage.createdAt)}
             </Text>
           )}
         </View>
 
         {/* Item Title */}
-        <Text style={styles.itemTitle} numberOfLines={1}>
+        <Text style={[styles.itemTitle, { color: colors.text }]} numberOfLines={1}>
           {item.offer?.listing.title || 'Trade Offer'}
         </Text>
 
         {/* User and Message */}
         <View style={styles.messageRow}>
-          <View style={styles.userAvatar}>
+          <View style={[styles.userAvatar, { backgroundColor: colors.surface }]}>
             {item.otherParticipant?.avatar ? (
               <Image source={{ uri: item.otherParticipant.avatar }} style={styles.avatarImage} />
             ) : (
-              <Text style={styles.avatarInitial}>
+              <Text style={[styles.avatarInitial, { color: colors.text }]}>
                 {item.otherParticipant?.displayName?.charAt(0) || '?'}
               </Text>
             )}
           </View>
           <View style={styles.messageContent}>
-            <Text style={styles.userName}>{item.otherParticipant?.displayName || 'Unknown'}</Text>
+            <Text style={[styles.userName, { color: colors.textMuted }]}>{item.otherParticipant?.displayName || 'Unknown'}</Text>
             {item.lastMessage && (
               <Text
-                style={[styles.lastMessage, item.unreadCount > 0 && styles.lastMessageUnread]}
+                style={[styles.lastMessage, { color: colors.textMuted }, item.unreadCount > 0 && { color: colors.text, fontWeight: '500' }]}
                 numberOfLines={1}
               >
                 {item.lastMessage.content}
@@ -165,21 +167,21 @@ export default function MessagesScreen() {
       </View>
 
       {/* Chevron */}
-      <MaterialIcons name="chevron-right" size={24} color="rgba(255,255,255,0.3)" />
+      <MaterialIcons name="chevron-right" size={24} color={colors.textMuted} />
     </TouchableOpacity>
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 16, borderBottomColor: colors.border }]}>
         <View style={styles.headerTop}>
-          <Text style={styles.headerTitle}>Messages</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Messages</Text>
           <TouchableOpacity
-            style={styles.headerButton}
+            style={[styles.headerButton, { backgroundColor: colors.surface }]}
             onPress={() => setShowSearch(true)}
           >
-            <MaterialIcons name="search" size={24} color="#fff" />
+            <MaterialIcons name="search" size={24} color={colors.text} />
           </TouchableOpacity>
         </View>
 
@@ -188,10 +190,18 @@ export default function MessagesScreen() {
           {filters.map((filter) => (
             <TouchableOpacity
               key={filter.key}
-              style={[styles.filterTab, activeFilter === filter.key && styles.filterTabActive]}
+              style={[
+                styles.filterTab,
+                { backgroundColor: colors.surface },
+                activeFilter === filter.key && { backgroundColor: colors.primary }
+              ]}
               onPress={() => setActiveFilter(filter.key)}
             >
-              <Text style={[styles.filterText, activeFilter === filter.key && styles.filterTextActive]}>
+              <Text style={[
+                styles.filterText,
+                { color: colors.textMuted },
+                activeFilter === filter.key && { color: colors.textInverse }
+              ]}>
                 {filter.label}
               </Text>
             </TouchableOpacity>
@@ -210,24 +220,24 @@ export default function MessagesScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            tintColor="#19e680"
+            tintColor={colors.primary}
           />
         }
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <View style={styles.emptyIconContainer}>
-              <MaterialIcons name="chat-bubble-outline" size={48} color="rgba(255,255,255,0.3)" />
+            <View style={[styles.emptyIconContainer, { backgroundColor: colors.surface }]}>
+              <MaterialIcons name="chat-bubble-outline" size={48} color={colors.textMuted} />
             </View>
-            <Text style={styles.emptyTitle}>No messages yet</Text>
-            <Text style={styles.emptySubtitle}>
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>No messages yet</Text>
+            <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>
               Start discovering items to make trades and chat with other users
             </Text>
             <TouchableOpacity
-              style={styles.emptyButton}
+              style={[styles.emptyButton, { backgroundColor: colors.primary }]}
               onPress={() => router.push('/(tabs)/')}
             >
-              <MaterialIcons name="explore" size={20} color="#0A0A0A" />
-              <Text style={styles.emptyButtonText}>Start Discovering</Text>
+              <MaterialIcons name="explore" size={20} color={colors.textInverse} />
+              <Text style={[styles.emptyButtonText, { color: colors.textInverse }]}>Start Discovering</Text>
             </TouchableOpacity>
           </View>
         }
@@ -240,23 +250,23 @@ export default function MessagesScreen() {
         transparent={true}
         onRequestClose={() => setShowSearch(false)}
       >
-        <View style={styles.searchModalOverlay}>
+        <View style={[styles.searchModalOverlay, { backgroundColor: colors.background }]}>
           <View style={[styles.searchModalContent, { paddingTop: insets.top + 16 }]}>
             {/* Search Header */}
-            <View style={styles.searchHeader}>
-              <View style={styles.searchInputContainer}>
-                <MaterialIcons name="search" size={20} color="rgba(255,255,255,0.5)" />
+            <View style={[styles.searchHeader, { borderBottomColor: colors.border }]}>
+              <View style={[styles.searchInputContainer, { backgroundColor: colors.surface }]}>
+                <MaterialIcons name="search" size={20} color={colors.textMuted} />
                 <TextInput
-                  style={styles.searchInput}
+                  style={[styles.searchInput, { color: colors.text }]}
                   placeholder="Search messages..."
-                  placeholderTextColor="rgba(255,255,255,0.4)"
+                  placeholderTextColor={colors.textMuted}
                   value={searchQuery}
                   onChangeText={setSearchQuery}
                   autoFocus
                 />
                 {searchQuery.length > 0 && (
                   <TouchableOpacity onPress={() => setSearchQuery('')}>
-                    <MaterialIcons name="close" size={20} color="rgba(255,255,255,0.5)" />
+                    <MaterialIcons name="close" size={20} color={colors.textMuted} />
                   </TouchableOpacity>
                 )}
               </View>
@@ -267,7 +277,7 @@ export default function MessagesScreen() {
                   setSearchQuery('');
                 }}
               >
-                <Text style={styles.searchCancelText}>Cancel</Text>
+                <Text style={[styles.searchCancelText, { color: colors.primary }]}>Cancel</Text>
               </TouchableOpacity>
             </View>
 
@@ -284,8 +294,8 @@ export default function MessagesScreen() {
               showsVerticalScrollIndicator={false}
               ListEmptyComponent={
                 <View style={styles.searchEmptyState}>
-                  <MaterialIcons name="search-off" size={48} color="rgba(255,255,255,0.3)" />
-                  <Text style={styles.searchEmptyText}>
+                  <MaterialIcons name="search-off" size={48} color={colors.textMuted} />
+                  <Text style={[styles.searchEmptyText, { color: colors.textMuted }]}>
                     {searchQuery.length > 0 ? 'No results found' : 'Search for conversations'}
                   </Text>
                 </View>

@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../../hooks/useAuth';
+import { useTheme } from '../../hooks/useTheme';
 import { MOCK_USER_LISTINGS } from '../../services/mockData';
 
 interface UserStats {
@@ -33,11 +34,10 @@ export default function ProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user, logout } = useAuth();
+  const { colors } = useTheme();
 
   const [stats, setStats] = useState<UserStats | null>(null);
   const [listings, setListings] = useState<Listing[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     loadProfileData();
@@ -51,7 +51,6 @@ export default function ProfileScreen() {
       completedTrades: 12,
     });
     setListings(MOCK_USER_LISTINGS as Listing[]);
-    setLoading(false);
   };
 
   const handleLogout = () => {
@@ -73,6 +72,9 @@ export default function ProfileScreen() {
       case 'Edit Profile':
         Alert.alert('Edit Profile', 'Profile editing will be available soon!');
         break;
+      case 'Appearance':
+        router.push('/settings');
+        break;
       case 'Notifications':
         Alert.alert('Notifications', 'Notification preferences will be available soon!');
         break;
@@ -83,9 +85,7 @@ export default function ProfileScreen() {
         Alert.alert(
           'Help & Support',
           'Need help? Contact us at support@barter.app',
-          [
-            { text: 'OK', style: 'default' },
-          ]
+          [{ text: 'OK', style: 'default' }]
         );
         break;
       case 'About':
@@ -100,6 +100,7 @@ export default function ProfileScreen() {
 
   const menuItems = [
     { icon: 'person-outline', label: 'Edit Profile' },
+    { icon: 'palette', label: 'Appearance' },
     { icon: 'notifications-none', label: 'Notifications' },
     { icon: 'lock-outline', label: 'Privacy & Security' },
     { icon: 'help-outline', label: 'Help & Support' },
@@ -107,24 +108,24 @@ export default function ProfileScreen() {
   ];
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
         contentContainerStyle={[styles.content, { paddingTop: insets.top + 16 }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Profile</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Profile</Text>
           <TouchableOpacity
-            style={styles.headerButton}
-            onPress={() => setShowSettings(!showSettings)}
+            style={[styles.headerButton, { backgroundColor: colors.surface }]}
+            onPress={() => router.push('/settings')}
           >
-            <MaterialIcons name="settings" size={24} color="#fff" />
+            <MaterialIcons name="settings" size={24} color={colors.text} />
           </TouchableOpacity>
         </View>
 
         {/* Profile Card */}
-        <View style={styles.profileCard}>
+        <View style={[styles.profileCard, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
           <LinearGradient
             colors={['rgba(25, 230, 128, 0.15)', 'rgba(25, 230, 128, 0)']}
             style={styles.profileGradient}
@@ -132,35 +133,35 @@ export default function ProfileScreen() {
           <View style={styles.profileContent}>
             {/* Avatar */}
             <View style={styles.avatarContainer}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>
+              <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+                <Text style={[styles.avatarText, { color: colors.textInverse }]}>
                   {user?.displayName?.charAt(0) || '?'}
                 </Text>
               </View>
-              <View style={styles.verifiedBadge}>
-                <MaterialIcons name="verified" size={16} color="#0A0A0A" />
+              <View style={[styles.verifiedBadge, { backgroundColor: colors.primary }]}>
+                <MaterialIcons name="verified" size={16} color={colors.textInverse} />
               </View>
             </View>
 
             {/* User Info */}
-            <Text style={styles.displayName}>{user?.displayName || 'User'}</Text>
-            <Text style={styles.username}>@{user?.username || 'username'}</Text>
+            <Text style={[styles.displayName, { color: colors.text }]}>{user?.displayName || 'User'}</Text>
+            <Text style={[styles.username, { color: colors.textMuted }]}>@{user?.username || 'username'}</Text>
 
             {/* Rating */}
             <View style={styles.ratingRow}>
-              <MaterialIcons name="star" size={18} color="#19e680" />
-              <Text style={styles.ratingText}>
+              <MaterialIcons name="star" size={18} color={colors.primary} />
+              <Text style={[styles.ratingText, { color: colors.text }]}>
                 {user?.rating?.toFixed(1) || '4.9'}
               </Text>
-              <Text style={styles.ratingCount}>
+              <Text style={[styles.ratingCount, { color: colors.textMuted }]}>
                 ({user?.totalTrades || 0} trades)
               </Text>
             </View>
 
             {/* Member Since */}
-            <View style={styles.memberBadge}>
-              <MaterialIcons name="schedule" size={14} color="rgba(255,255,255,0.5)" />
-              <Text style={styles.memberText}>Member since 2024</Text>
+            <View style={[styles.memberBadge, { backgroundColor: colors.surface }]}>
+              <MaterialIcons name="schedule" size={14} color={colors.textMuted} />
+              <Text style={[styles.memberText, { color: colors.textMuted }]}>Member since 2024</Text>
             </View>
           </View>
         </View>
@@ -168,26 +169,26 @@ export default function ProfileScreen() {
         {/* Stats */}
         {stats && (
           <View style={styles.statsRow}>
-            <View style={styles.statCard}>
+            <View style={[styles.statCard, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
               <View style={[styles.statIcon, { backgroundColor: 'rgba(25, 230, 128, 0.15)' }]}>
-                <MaterialIcons name="inventory-2" size={20} color="#19e680" />
+                <MaterialIcons name="inventory-2" size={20} color={colors.primary} />
               </View>
-              <Text style={styles.statNumber}>{stats.activeListings}</Text>
-              <Text style={styles.statLabel}>Active Listings</Text>
+              <Text style={[styles.statNumber, { color: colors.text }]}>{stats.activeListings}</Text>
+              <Text style={[styles.statLabel, { color: colors.textMuted }]}>Active Listings</Text>
             </View>
-            <View style={styles.statCard}>
+            <View style={[styles.statCard, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
               <View style={[styles.statIcon, { backgroundColor: 'rgba(245, 158, 11, 0.15)' }]}>
-                <MaterialIcons name="pending-actions" size={20} color="#f59e0b" />
+                <MaterialIcons name="pending-actions" size={20} color={colors.warning} />
               </View>
-              <Text style={styles.statNumber}>{stats.pendingOffers}</Text>
-              <Text style={styles.statLabel}>Pending</Text>
+              <Text style={[styles.statNumber, { color: colors.text }]}>{stats.pendingOffers}</Text>
+              <Text style={[styles.statLabel, { color: colors.textMuted }]}>Pending</Text>
             </View>
-            <View style={styles.statCard}>
+            <View style={[styles.statCard, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
               <View style={[styles.statIcon, { backgroundColor: 'rgba(59, 130, 246, 0.15)' }]}>
-                <MaterialIcons name="swap-horiz" size={20} color="#3b82f6" />
+                <MaterialIcons name="swap-horiz" size={20} color={colors.info} />
               </View>
-              <Text style={styles.statNumber}>{stats.completedTrades}</Text>
-              <Text style={styles.statLabel}>Trades</Text>
+              <Text style={[styles.statNumber, { color: colors.text }]}>{stats.completedTrades}</Text>
+              <Text style={[styles.statLabel, { color: colors.textMuted }]}>Trades</Text>
             </View>
           </View>
         )}
@@ -196,15 +197,15 @@ export default function ProfileScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleRow}>
-              <MaterialIcons name="grid-view" size={20} color="#19e680" />
-              <Text style={styles.sectionTitle}>My Listings</Text>
+              <MaterialIcons name="grid-view" size={20} color={colors.primary} />
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>My Listings</Text>
             </View>
             <TouchableOpacity
-              style={styles.addButton}
+              style={[styles.addButton, { backgroundColor: colors.primary }]}
               onPress={() => router.push('/(tabs)/create')}
             >
-              <MaterialIcons name="add" size={18} color="#0A0A0A" />
-              <Text style={styles.addButtonText}>Add New</Text>
+              <MaterialIcons name="add" size={18} color={colors.textInverse} />
+              <Text style={[styles.addButtonText, { color: colors.textInverse }]}>Add New</Text>
             </TouchableOpacity>
           </View>
 
@@ -213,7 +214,7 @@ export default function ProfileScreen() {
               {listings.slice(0, 4).map((listing) => (
                 <TouchableOpacity
                   key={listing.id}
-                  style={styles.listingCard}
+                  style={[styles.listingCard, { backgroundColor: colors.surface }]}
                   onPress={() => router.push(`/listing/${listing.id}` as any)}
                   activeOpacity={0.7}
                 >
@@ -229,39 +230,39 @@ export default function ProfileScreen() {
                     <Text style={styles.listingTitle} numberOfLines={1}>
                       {listing.title}
                     </Text>
-                    <Text style={styles.listingValue}>${listing.estimatedValue}</Text>
+                    <Text style={[styles.listingValue, { color: colors.primary }]}>${listing.estimatedValue}</Text>
                   </View>
                   <View
                     style={[
                       styles.statusIndicator,
-                      { backgroundColor: listing.status === 'ACTIVE' ? '#19e680' : '#64748b' },
+                      { backgroundColor: listing.status === 'ACTIVE' ? colors.primary : '#64748b' },
                     ]}
                   />
                 </TouchableOpacity>
               ))}
             </View>
           ) : (
-            <View style={styles.emptyListings}>
-              <View style={styles.emptyIconContainer}>
-                <MaterialIcons name="add-circle-outline" size={32} color="rgba(255,255,255,0.3)" />
+            <View style={[styles.emptyListings, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+              <View style={[styles.emptyIconContainer, { backgroundColor: colors.surface }]}>
+                <MaterialIcons name="add-circle-outline" size={32} color={colors.textMuted} />
               </View>
-              <Text style={styles.emptyText}>No listings yet</Text>
+              <Text style={[styles.emptyText, { color: colors.textMuted }]}>No listings yet</Text>
               <TouchableOpacity
-                style={styles.createButton}
+                style={[styles.createButton, { backgroundColor: colors.primary }]}
                 onPress={() => router.push('/(tabs)/create')}
               >
-                <Text style={styles.createButtonText}>Create Your First Listing</Text>
+                <Text style={[styles.createButtonText, { color: colors.textInverse }]}>Create Your First Listing</Text>
               </TouchableOpacity>
             </View>
           )}
 
           {listings.length > 4 && (
             <TouchableOpacity
-              style={styles.viewAllButton}
+              style={[styles.viewAllButton, { backgroundColor: `${colors.primary}15` }]}
               onPress={() => Alert.alert('My Listings', `You have ${listings.length} active listings`)}
             >
-              <Text style={styles.viewAllText}>View All Listings</Text>
-              <MaterialIcons name="chevron-right" size={20} color="#19e680" />
+              <Text style={[styles.viewAllText, { color: colors.primary }]}>View All Listings</Text>
+              <MaterialIcons name="chevron-right" size={20} color={colors.primary} />
             </TouchableOpacity>
           )}
         </View>
@@ -269,26 +270,26 @@ export default function ProfileScreen() {
         {/* Settings Menu */}
         <View style={styles.section}>
           <View style={styles.sectionTitleRow}>
-            <MaterialIcons name="tune" size={20} color="#19e680" />
-            <Text style={styles.sectionTitle}>Settings</Text>
+            <MaterialIcons name="tune" size={20} color={colors.primary} />
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Settings</Text>
           </View>
 
-          <View style={styles.menuCard}>
+          <View style={[styles.menuCard, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
             {menuItems.map((item, index) => (
               <TouchableOpacity
                 key={item.label}
                 style={[
                   styles.menuItem,
-                  index < menuItems.length - 1 && styles.menuItemBorder,
+                  index < menuItems.length - 1 && [styles.menuItemBorder, { borderBottomColor: colors.border }],
                 ]}
                 activeOpacity={0.7}
                 onPress={() => handleMenuItemPress(item.label)}
               >
-                <View style={styles.menuIconContainer}>
-                  <MaterialIcons name={item.icon as any} size={22} color="rgba(255,255,255,0.8)" />
+                <View style={[styles.menuIconContainer, { backgroundColor: colors.surface }]}>
+                  <MaterialIcons name={item.icon as any} size={22} color={colors.textSecondary} />
                 </View>
-                <Text style={styles.menuText}>{item.label}</Text>
-                <MaterialIcons name="chevron-right" size={22} color="rgba(255,255,255,0.3)" />
+                <Text style={[styles.menuText, { color: colors.text }]}>{item.label}</Text>
+                <MaterialIcons name="chevron-right" size={22} color={colors.textMuted} />
               </TouchableOpacity>
             ))}
           </View>
@@ -299,8 +300,8 @@ export default function ProfileScreen() {
             onPress={handleLogout}
             activeOpacity={0.7}
           >
-            <MaterialIcons name="logout" size={22} color="#ef4444" />
-            <Text style={styles.logoutText}>Logout</Text>
+            <MaterialIcons name="logout" size={22} color={colors.error} />
+            <Text style={[styles.logoutText, { color: colors.error }]}>Logout</Text>
           </TouchableOpacity>
         </View>
 
@@ -314,7 +315,6 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0A0A0A',
   },
   content: {
     paddingHorizontal: 24,
@@ -328,23 +328,19 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 32,
     fontWeight: '800',
-    color: '#fff',
     letterSpacing: -0.5,
   },
   headerButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.1)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   profileCard: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: 24,
     padding: 24,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
     marginBottom: 24,
     overflow: 'hidden',
   },
@@ -366,7 +362,6 @@ const styles = StyleSheet.create({
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: '#19e680',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 3,
@@ -375,7 +370,6 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 40,
     fontWeight: '700',
-    color: '#0A0A0A',
   },
   verifiedBadge: {
     position: 'absolute',
@@ -384,7 +378,6 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#19e680',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 3,
@@ -393,12 +386,10 @@ const styles = StyleSheet.create({
   displayName: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#fff',
     marginBottom: 4,
   },
   username: {
     fontSize: 16,
-    color: 'rgba(255,255,255,0.5)',
     marginBottom: 12,
   },
   ratingRow: {
@@ -410,11 +401,9 @@ const styles = StyleSheet.create({
   ratingText: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#fff',
   },
   ratingCount: {
     fontSize: 14,
-    color: 'rgba(255,255,255,0.5)',
   },
   memberBadge: {
     flexDirection: 'row',
@@ -422,12 +411,10 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: 9999,
   },
   memberText: {
     fontSize: 12,
-    color: 'rgba(255,255,255,0.5)',
   },
   statsRow: {
     flexDirection: 'row',
@@ -436,12 +423,10 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: 16,
     padding: 16,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
   },
   statIcon: {
     width: 40,
@@ -454,12 +439,10 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#fff',
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: 'rgba(255,255,255,0.5)',
     fontWeight: '500',
   },
   section: {
@@ -480,13 +463,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#fff',
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: '#19e680',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 9999,
@@ -494,7 +475,6 @@ const styles = StyleSheet.create({
   addButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0A0A0A',
   },
   listingsGrid: {
     flexDirection: 'row',
@@ -506,7 +486,6 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: 'rgba(255,255,255,0.1)',
   },
   listingImage: {
     width: '100%',
@@ -535,7 +514,6 @@ const styles = StyleSheet.create({
   listingValue: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#19e680',
   },
   statusIndicator: {
     position: 'absolute',
@@ -551,40 +529,33 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 12,
     marginTop: 16,
-    backgroundColor: 'rgba(25, 230, 128, 0.1)',
     borderRadius: 12,
     gap: 4,
   },
   viewAllText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#19e680',
   },
   emptyListings: {
     alignItems: 'center',
     padding: 32,
-    backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
     borderStyle: 'dashed',
   },
   emptyIconContainer: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: 'rgba(255,255,255,0.05)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
   },
   emptyText: {
     fontSize: 15,
-    color: 'rgba(255,255,255,0.5)',
     marginBottom: 16,
   },
   createButton: {
-    backgroundColor: '#19e680',
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 9999,
@@ -592,14 +563,11 @@ const styles = StyleSheet.create({
   createButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0A0A0A',
   },
   menuCard: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: 16,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
   },
   menuItem: {
     flexDirection: 'row',
@@ -608,13 +576,11 @@ const styles = StyleSheet.create({
   },
   menuItemBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.08)',
   },
   menuIconContainer: {
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.05)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -622,7 +588,6 @@ const styles = StyleSheet.create({
   menuText: {
     flex: 1,
     fontSize: 16,
-    color: '#fff',
     fontWeight: '500',
   },
   logoutButton: {
@@ -640,6 +605,5 @@ const styles = StyleSheet.create({
   logoutText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#ef4444',
   },
 });
