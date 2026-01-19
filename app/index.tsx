@@ -16,7 +16,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function SplashScreen() {
   const router = useRouter();
-  const { isLoading, isAuthenticated } = useAuth();
+  const { isInitialized, isAuthenticated, user } = useAuth();
 
   // Animation values
   const logoScale = useRef(new Animated.Value(0.8)).current;
@@ -123,18 +123,23 @@ export default function SplashScreen() {
   }, []);
 
   useEffect(() => {
-    if (!isLoading) {
+    if (isInitialized) {
       // Add a small delay for the animation to complete
       const timeout = setTimeout(() => {
         if (isAuthenticated) {
-          router.replace('/(tabs)');
+          // Check if user needs onboarding
+          if (user && !user.onboardingCompleted) {
+            router.replace('/onboarding');
+          } else {
+            router.replace('/(tabs)');
+          }
         } else {
           router.replace('/(auth)/login');
         }
       }, 2000);
       return () => clearTimeout(timeout);
     }
-  }, [isLoading, isAuthenticated]);
+  }, [isInitialized, isAuthenticated, user]);
 
   const rotation = logoRotate.interpolate({
     inputRange: [0, 1],

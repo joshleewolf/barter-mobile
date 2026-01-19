@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,12 @@ import { useRouter, Link } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../hooks/useAuth';
 import { Colors, Spacing, BorderRadius, FontSizes } from '../../constants/theme';
+import {
+  validateRegistrationForm,
+  validatePasswordStrength,
+  validateEmail,
+  validateUsername,
+} from '../../utils/validation';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -25,15 +31,42 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
-  const handleRegister = async () => {
-    if (!displayName || !username || !email || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
-      return;
+  // Calculate password strength in real-time
+  const passwordStrength = useMemo(
+    () => validatePasswordStrength(password),
+    [password]
+  );
+
+  // Validate individual fields on blur
+  const handleBlur = (field: string) => {
+    let error = '';
+
+    if (field === 'email' && email) {
+      const result = validateEmail(email);
+      if (!result.isValid) error = result.error!;
+    } else if (field === 'username' && username) {
+      const result = validateUsername(username);
+      if (!result.isValid) error = result.error!;
     }
 
-    if (password.length < 8) {
-      Alert.alert('Error', 'Password must be at least 8 characters');
+    setFieldErrors((prev) => ({ ...prev, [field]: error }));
+  };
+
+  const handleRegister = async () => {
+    const validation = validateRegistrationForm({
+      displayName,
+      username,
+      email,
+      password,
+    });
+
+    if (!validation.isValid) {
+      setFieldErrors(validation.errors);
+      // Show first error in alert
+      const firstError = Object.values(validation.errors)[0];
+      Alert.alert('Validation Error', firstError);
       return;
     }
 
@@ -68,52 +101,124 @@ export default function RegisterScreen() {
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Display Name</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, fieldErrors.displayName && styles.inputError]}
               placeholder="How should we call you?"
               placeholderTextColor={Colors.textMuted}
               value={displayName}
-              onChangeText={setDisplayName}
+              onChangeText={(text) => {
+                setDisplayName(text);
+                if (fieldErrors.displayName) setFieldErrors((prev) => ({ ...prev, displayName: '' }));
+              }}
               autoCapitalize="words"
             />
+            {fieldErrors.displayName ? (
+              <Text style={styles.errorText}>{fieldErrors.displayName}</Text>
+            ) : null}
           </View>
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Username</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, fieldErrors.username && styles.inputError]}
               placeholder="Choose a unique username"
               placeholderTextColor={Colors.textMuted}
               value={username}
-              onChangeText={setUsername}
+              onChangeText={(text) => {
+                setUsername(text.toLowerCase().replace(/[^a-z0-9_]/g, ''));
+                if (fieldErrors.username) setFieldErrors((prev) => ({ ...prev, username: '' }));
+              }}
+              onBlur={() => handleBlur('username')}
               autoCapitalize="none"
             />
+            {fieldErrors.username ? (
+              <Text style={styles.errorText}>{fieldErrors.username}</Text>
+            ) : null}
           </View>
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Email</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, fieldErrors.email && styles.inputError]}
               placeholder="you@example.com"
               placeholderTextColor={Colors.textMuted}
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(text) => {
+                setEmail(text);
+                if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: '' }));
+              }}
+              onBlur={() => handleBlur('email')}
               keyboardType="email-address"
               autoCapitalize="none"
               autoComplete="email"
             />
+            {fieldErrors.email ? (
+              <Text style={styles.errorText}>{fieldErrors.email}</Text>
+            ) : null}
           </View>
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Password</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, fieldErrors.password && styles.inputError]}
               placeholder="At least 8 characters"
               placeholderTextColor={Colors.textMuted}
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(text) => {
+                setPassword(text);
+                if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: '' }));
+              }}
               secureTextEntry
               autoComplete="new-password"
             />
+            {fieldErrors.password ? (
+              <Text style={styles.errorText}>{fieldErrors.password}</Text>
+            ) : null}
+
+            {/* Password Strength Indicator */}
+            {password.length > 0 && (
+              <View style={styles.strengthContainer}>
+                <View style={styles.strengthBar}>
+                  <View
+                    style={[
+                      styles.strengthFill,
+                      {
+                        width: `${(passwordStrength.score / 5) * 100}%`,
+                        backgroundColor: passwordStrength.color,
+                      },
+                    ]}
+                  />
+                </View>
+                <Text style={[styles.strengthLabel, { color: passwordStrength.color }]}>
+                  {passwordStrength.label}
+                </Text>
+              </View>
+            )}
+
+            {/* Password Requirements */}
+            {password.length > 0 && passwordStrength.score < 4 && (
+              <View style={styles.requirementsContainer}>
+                <RequirementItem
+                  met={passwordStrength.requirements.minLength}
+                  text="At least 8 characters"
+                />
+                <RequirementItem
+                  met={passwordStrength.requirements.hasUppercase}
+                  text="One uppercase letter"
+                />
+                <RequirementItem
+                  met={passwordStrength.requirements.hasLowercase}
+                  text="One lowercase letter"
+                />
+                <RequirementItem
+                  met={passwordStrength.requirements.hasNumber}
+                  text="One number"
+                />
+                <RequirementItem
+                  met={passwordStrength.requirements.hasSpecial}
+                  text="One special character"
+                />
+              </View>
+            )}
           </View>
 
           <TouchableOpacity
@@ -137,6 +242,14 @@ export default function RegisterScreen() {
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
+  );
+}
+
+function RequirementItem({ met, text }: { met: boolean; text: string }) {
+  return (
+    <Text style={[styles.requirementText, met && styles.requirementMet]}>
+      {met ? '✓' : '○'} {text}
+    </Text>
   );
 }
 
@@ -178,6 +291,47 @@ const styles = StyleSheet.create({
     color: Colors.text,
     borderWidth: 1,
     borderColor: Colors.border,
+  },
+  inputError: {
+    borderColor: Colors.error,
+  },
+  errorText: {
+    fontSize: FontSizes.xs,
+    color: Colors.error,
+    marginTop: 2,
+  },
+  strengthContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginTop: Spacing.xs,
+  },
+  strengthBar: {
+    flex: 1,
+    height: 4,
+    backgroundColor: Colors.border,
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  strengthFill: {
+    height: '100%',
+    borderRadius: 2,
+  },
+  strengthLabel: {
+    fontSize: FontSizes.xs,
+    fontWeight: '600',
+    minWidth: 50,
+  },
+  requirementsContainer: {
+    marginTop: Spacing.sm,
+    gap: 2,
+  },
+  requirementText: {
+    fontSize: FontSizes.xs,
+    color: Colors.textMuted,
+  },
+  requirementMet: {
+    color: Colors.success,
   },
   button: {
     backgroundColor: Colors.primary,

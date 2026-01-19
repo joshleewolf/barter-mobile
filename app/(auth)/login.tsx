@@ -32,6 +32,7 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       await login(email, password);
+      // Check if onboarding is needed - will be handled by _layout
       router.replace('/(tabs)');
     } catch (error: any) {
       Alert.alert('Login Failed', error.message || 'Invalid credentials');

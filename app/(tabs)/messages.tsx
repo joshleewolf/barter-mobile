@@ -311,13 +311,11 @@ export default function MessagesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0A0A0A',
   },
   header: {
     paddingHorizontal: 24,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
   },
   headerTop: {
     flexDirection: 'row',
@@ -328,14 +326,12 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 32,
     fontWeight: '800',
-    color: '#fff',
     letterSpacing: -0.5,
   },
   headerButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.1)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -347,19 +343,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 9999,
-    backgroundColor: 'rgba(255,255,255,0.05)',
   },
-  filterTabActive: {
-    backgroundColor: '#19e680',
-  },
+  filterTabActive: {},
   filterText: {
     fontSize: 14,
     fontWeight: '600',
-    color: 'rgba(255,255,255,0.6)',
   },
-  filterTextActive: {
-    color: '#0A0A0A',
-  },
+  filterTextActive: {},
   listContent: {
     padding: 16,
     gap: 12,
@@ -368,11 +358,9 @@ const styles = StyleSheet.create({
   conversationCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
   },
   imageContainer: {
     position: 'relative',
@@ -381,7 +369,6 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.1)',
   },
   unreadBadge: {
     position: 'absolute',
@@ -390,7 +377,6 @@ const styles = StyleSheet.create({
     minWidth: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: '#19e680',
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 6,
@@ -398,7 +384,6 @@ const styles = StyleSheet.create({
   unreadText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#0A0A0A',
   },
   conversationContent: {
     flex: 1,
@@ -430,12 +415,10 @@ const styles = StyleSheet.create({
   },
   timeText: {
     fontSize: 12,
-    color: 'rgba(255,255,255,0.4)',
   },
   itemTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#fff',
     marginBottom: 8,
   },
   messageRow: {
@@ -447,7 +430,6 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -459,7 +441,6 @@ const styles = StyleSheet.create({
   avatarInitial: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#fff',
   },
   messageContent: {
     flex: 1,
@@ -467,15 +448,12 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 12,
     fontWeight: '600',
-    color: 'rgba(255,255,255,0.6)',
   },
   lastMessage: {
     fontSize: 13,
-    color: 'rgba(255,255,255,0.4)',
     marginTop: 2,
   },
   lastMessageUnread: {
-    color: '#fff',
     fontWeight: '500',
   },
   emptyState: {
@@ -487,7 +465,6 @@ const styles = StyleSheet.create({
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: 'rgba(255,255,255,0.05)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
@@ -495,12 +472,10 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#fff',
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 15,
-    color: 'rgba(255,255,255,0.5)',
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 24,
@@ -509,7 +484,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#19e680',
     paddingHorizontal: 24,
     paddingVertical: 14,
     borderRadius: 9999,
@@ -517,11 +491,9 @@ const styles = StyleSheet.create({
   emptyButtonText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#0A0A0A',
   },
   searchModalOverlay: {
     flex: 1,
-    backgroundColor: '#0A0A0A',
   },
   searchModalContent: {
     flex: 1,
@@ -533,13 +505,11 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     gap: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
   },
   searchInputContainer: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.1)',
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -548,14 +518,12 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#fff',
   },
   searchCancelButton: {
     paddingHorizontal: 8,
   },
   searchCancelText: {
     fontSize: 16,
-    color: '#19e680',
     fontWeight: '600',
   },
   searchEmptyState: {
@@ -565,6 +533,5 @@ const styles = StyleSheet.create({
   },
   searchEmptyText: {
     fontSize: 16,
-    color: 'rgba(255,255,255,0.5)',
   },
 });

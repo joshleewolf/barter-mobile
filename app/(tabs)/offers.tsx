@@ -12,6 +12,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { MOCK_OFFERS } from '../../services/mockData';
+import { useTheme } from '../../hooks/useTheme';
 
 interface Offer {
   id: string;
@@ -40,6 +41,7 @@ interface Offer {
 export default function OffersScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
 
   const [activeTab, setActiveTab] = useState<'received' | 'sent'>('received');
   const [offers, setOffers] = useState<Offer[]>([]);
@@ -103,7 +105,7 @@ export default function OffersScreen() {
 
   const renderOffer = ({ item }: { item: Offer }) => (
     <TouchableOpacity
-      style={styles.offerCard}
+      style={[styles.offerCard, { backgroundColor: colors.cardBg, borderColor: colors.border }]}
       onPress={() => router.push(`/chat/${item.id}` as any)}
       activeOpacity={0.7}
     >
@@ -111,17 +113,17 @@ export default function OffersScreen() {
       <View style={styles.imagesContainer}>
         <Image
           source={{ uri: item.listing.images[0] || 'https://via.placeholder.com/80' }}
-          style={styles.mainImage}
+          style={[styles.mainImage, { backgroundColor: colors.surface }]}
         />
         {item.offeredListing && (
-          <View style={styles.secondaryImageContainer}>
+          <View style={[styles.secondaryImageContainer, { backgroundColor: colors.background }]}>
             <Image
               source={{ uri: item.offeredListing.images[0] || 'https://via.placeholder.com/40' }}
               style={styles.secondaryImage}
             />
           </View>
         )}
-        <View style={[styles.offerTypeIcon, { backgroundColor: `${getStatusColor(item.status)}20` }]}>
+        <View style={[styles.offerTypeIcon, { backgroundColor: `${getStatusColor(item.status)}20`, borderColor: colors.background }]}>
           <MaterialIcons
             name={getOfferIcon(item.type) as any}
             size={16}
@@ -140,26 +142,26 @@ export default function OffersScreen() {
               {getStatusLabel(item.status)}
             </Text>
           </View>
-          <Text style={styles.timeText}>{formatTimeAgo(item.createdAt)}</Text>
+          <Text style={[styles.timeText, { color: colors.textMuted }]}>{formatTimeAgo(item.createdAt)}</Text>
         </View>
 
         {/* Title */}
-        <Text style={styles.offerTitle} numberOfLines={1}>
+        <Text style={[styles.offerTitle, { color: colors.text }]} numberOfLines={1}>
           {item.listing.title}
         </Text>
 
         {/* Offer Details */}
         <View style={styles.offerDetails}>
           {item.type === 'CASH' && (
-            <Text style={styles.offerValue}>${item.cashAmount} Cash Offer</Text>
+            <Text style={[styles.offerValue, { color: colors.primary }]}>${item.cashAmount} Cash Offer</Text>
           )}
           {item.type === 'ITEM' && (
-            <Text style={styles.offerValue} numberOfLines={1}>
+            <Text style={[styles.offerValue, { color: colors.primary }]} numberOfLines={1}>
               Trading: {item.offeredListing?.title}
             </Text>
           )}
           {item.type === 'COMBO' && (
-            <Text style={styles.offerValue}>
+            <Text style={[styles.offerValue, { color: colors.primary }]}>
               Trade + ${item.cashAmount}
             </Text>
           )}
@@ -167,40 +169,40 @@ export default function OffersScreen() {
 
         {/* User Row */}
         <View style={styles.userRow}>
-          <View style={styles.userAvatar}>
-            <Text style={styles.userInitial}>
+          <View style={[styles.userAvatar, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.userInitial, { color: colors.text }]}>
               {activeTab === 'received'
                 ? item.fromUser?.displayName?.charAt(0) || '?'
                 : item.toUser?.displayName?.charAt(0) || '?'}
             </Text>
           </View>
-          <Text style={styles.userName}>
+          <Text style={[styles.userName, { color: colors.textMuted }]}>
             {activeTab === 'received'
               ? item.fromUser?.displayName
               : item.toUser?.displayName}
           </Text>
           {activeTab === 'received' && item.fromUser?.rating && (
-            <View style={styles.ratingBadge}>
-              <MaterialIcons name="star" size={12} color="#19e680" />
-              <Text style={styles.ratingText}>{item.fromUser.rating.toFixed(1)}</Text>
+            <View style={[styles.ratingBadge, { backgroundColor: colors.primary + '15' }]}>
+              <MaterialIcons name="star" size={12} color={colors.primary} />
+              <Text style={[styles.ratingText, { color: colors.primary }]}>{item.fromUser.rating.toFixed(1)}</Text>
             </View>
           )}
         </View>
       </View>
 
       {/* Chevron */}
-      <MaterialIcons name="chevron-right" size={24} color="rgba(255,255,255,0.3)" />
+      <MaterialIcons name="chevron-right" size={24} color={colors.textMuted} />
     </TouchableOpacity>
   );
 
   const pendingCount = offers.filter(o => o.status === 'PENDING').length;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 16, borderBottomColor: colors.border }]}>
         <View style={styles.headerTop}>
-          <Text style={styles.headerTitle}>Trades</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Trades</Text>
           {pendingCount > 0 && (
             <View style={styles.pendingBadge}>
               <Text style={styles.pendingText}>{pendingCount} pending</Text>
@@ -211,28 +213,44 @@ export default function OffersScreen() {
         {/* Tab Switcher */}
         <View style={styles.tabs}>
           <TouchableOpacity
-            style={[styles.tab, activeTab === 'received' && styles.tabActive]}
+            style={[
+              styles.tab,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+              activeTab === 'received' && { backgroundColor: colors.primary, borderColor: colors.primary }
+            ]}
             onPress={() => setActiveTab('received')}
           >
             <MaterialIcons
               name="call-received"
               size={18}
-              color={activeTab === 'received' ? '#0A0A0A' : 'rgba(255,255,255,0.5)'}
+              color={activeTab === 'received' ? colors.textInverse : colors.textMuted}
             />
-            <Text style={[styles.tabText, activeTab === 'received' && styles.tabTextActive]}>
+            <Text style={[
+              styles.tabText,
+              { color: colors.textMuted },
+              activeTab === 'received' && { color: colors.textInverse }
+            ]}>
               Received
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.tab, activeTab === 'sent' && styles.tabActive]}
+            style={[
+              styles.tab,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+              activeTab === 'sent' && { backgroundColor: colors.primary, borderColor: colors.primary }
+            ]}
             onPress={() => setActiveTab('sent')}
           >
             <MaterialIcons
               name="call-made"
               size={18}
-              color={activeTab === 'sent' ? '#0A0A0A' : 'rgba(255,255,255,0.5)'}
+              color={activeTab === 'sent' ? colors.textInverse : colors.textMuted}
             />
-            <Text style={[styles.tabText, activeTab === 'sent' && styles.tabTextActive]}>
+            <Text style={[
+              styles.tabText,
+              { color: colors.textMuted },
+              activeTab === 'sent' && { color: colors.textInverse }
+            ]}>
               Sent
             </Text>
           </TouchableOpacity>
@@ -250,33 +268,33 @@ export default function OffersScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            tintColor="#19e680"
+            tintColor={colors.primary}
           />
         }
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <View style={styles.emptyIconContainer}>
+            <View style={[styles.emptyIconContainer, { backgroundColor: colors.surface }]}>
               <MaterialIcons
                 name={activeTab === 'received' ? 'call-received' : 'call-made'}
                 size={48}
-                color="rgba(255,255,255,0.3)"
+                color={colors.textMuted}
               />
             </View>
-            <Text style={styles.emptyTitle}>
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>
               No {activeTab} offers yet
             </Text>
-            <Text style={styles.emptySubtitle}>
+            <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>
               {activeTab === 'received'
                 ? 'When someone makes an offer on your items, it will appear here'
                 : 'Swipe right on items you want to start making offers'}
             </Text>
             {activeTab === 'sent' && (
               <TouchableOpacity
-                style={styles.emptyButton}
+                style={[styles.emptyButton, { backgroundColor: colors.primary }]}
                 onPress={() => router.push('/(tabs)/')}
               >
-                <MaterialIcons name="explore" size={20} color="#0A0A0A" />
-                <Text style={styles.emptyButtonText}>Discover Items</Text>
+                <MaterialIcons name="explore" size={20} color={colors.textInverse} />
+                <Text style={[styles.emptyButtonText, { color: colors.textInverse }]}>Discover Items</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -289,13 +307,11 @@ export default function OffersScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0A0A0A',
   },
   header: {
     paddingHorizontal: 24,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
   },
   headerTop: {
     flexDirection: 'row',
@@ -306,7 +322,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 32,
     fontWeight: '800',
-    color: '#fff',
     letterSpacing: -0.5,
   },
   pendingBadge: {
@@ -332,21 +347,11 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.05)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-  },
-  tabActive: {
-    backgroundColor: '#19e680',
-    borderColor: '#19e680',
   },
   tabText: {
     fontSize: 15,
     fontWeight: '600',
-    color: 'rgba(255,255,255,0.5)',
-  },
-  tabTextActive: {
-    color: '#0A0A0A',
   },
   listContent: {
     padding: 16,
@@ -356,11 +361,9 @@ const styles = StyleSheet.create({
   offerCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
   },
   imagesContainer: {
     position: 'relative',
@@ -371,7 +374,6 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.1)',
   },
   secondaryImageContainer: {
     position: 'absolute',
@@ -380,7 +382,6 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: '#0A0A0A',
     padding: 2,
   },
   secondaryImage: {
@@ -398,7 +399,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#0A0A0A',
   },
   offerContent: {
     flex: 1,
@@ -430,12 +430,10 @@ const styles = StyleSheet.create({
   },
   timeText: {
     fontSize: 12,
-    color: 'rgba(255,255,255,0.4)',
   },
   offerTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#fff',
     marginBottom: 4,
   },
   offerDetails: {
@@ -444,7 +442,6 @@ const styles = StyleSheet.create({
   offerValue: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#19e680',
   },
   userRow: {
     flexDirection: 'row',
@@ -455,25 +452,21 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   userInitial: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#fff',
   },
   userName: {
     fontSize: 13,
-    color: 'rgba(255,255,255,0.6)',
     flex: 1,
   },
   ratingBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 2,
-    backgroundColor: 'rgba(25, 230, 128, 0.1)',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
@@ -481,7 +474,6 @@ const styles = StyleSheet.create({
   ratingText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#19e680',
   },
   emptyState: {
     alignItems: 'center',
@@ -492,7 +484,6 @@ const styles = StyleSheet.create({
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: 'rgba(255,255,255,0.05)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
@@ -500,12 +491,10 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#fff',
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 15,
-    color: 'rgba(255,255,255,0.5)',
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 24,
@@ -514,7 +503,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#19e680',
     paddingHorizontal: 24,
     paddingVertical: 14,
     borderRadius: 9999,
@@ -522,6 +510,5 @@ const styles = StyleSheet.create({
   emptyButtonText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#0A0A0A',
   },
 });

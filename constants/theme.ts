@@ -19,6 +19,7 @@ export const Colors = {
   text: '#FFFFFF',
   textSecondary: 'rgba(255, 255, 255, 0.8)',
   textMuted: 'rgba(255, 255, 255, 0.6)',
+  textInverse: '#0A0A0A',
 
   // Semantic
   success: '#19E680',

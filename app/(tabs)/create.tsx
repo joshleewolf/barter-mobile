@@ -12,9 +12,12 @@ import {
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
-import { api } from '../../services/api';
-import { ENDPOINTS } from '../../constants/api';
+import { MaterialIcons } from '@expo/vector-icons';
+import { supabase } from '../../services/supabase';
+import { useAuth } from '../../hooks/useAuth';
 import { Colors, Spacing, BorderRadius, FontSizes } from '../../constants/theme';
+import { useTheme } from '../../hooks/useTheme';
+import { validateListingForm } from '../../utils/validation';
 
 const CATEGORIES = [
   'Electronics',
@@ -39,6 +42,8 @@ const CONDITIONS = [
 export default function CreateListingScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const { user } = useAuth();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -48,6 +53,7 @@ export default function CreateListingScreen() {
   const [images, setImages] = useState<string[]>([]);
   const [listingType, setListingType] = useState<'ITEM' | 'SERVICE'>('ITEM');
   const [submitting, setSubmitting] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -72,38 +78,87 @@ export default function CreateListingScreen() {
     setImages(images.filter((_, i) => i !== index));
   };
 
+  // Filter only positive numbers for estimated value
+  const handleValueChange = (text: string) => {
+    // Only allow digits and decimal point
+    const filtered = text.replace(/[^0-9.]/g, '');
+    // Prevent multiple decimal points
+    const parts = filtered.split('.');
+    const sanitized = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : filtered;
+    setEstimatedValue(sanitized);
+    if (fieldErrors.estimatedValue) {
+      setFieldErrors((prev) => ({ ...prev, estimatedValue: '' }));
+    }
+  };
+
   const handleSubmit = async () => {
-    if (!title || !description || !estimatedValue || !category) {
-      Alert.alert('Error', 'Please fill in all required fields');
+    if (!user) {
+      Alert.alert('Error', 'You must be logged in to create a listing');
       return;
     }
 
-    if (images.length === 0) {
-      Alert.alert('Error', 'Please add at least one image');
+    const validation = validateListingForm({
+      title,
+      description,
+      estimatedValue,
+      category,
+      images,
+    });
+
+    if (!validation.isValid) {
+      setFieldErrors(validation.errors);
+      const firstError = Object.values(validation.errors)[0];
+      Alert.alert('Validation Error', firstError);
       return;
     }
 
     setSubmitting(true);
     try {
-      // In production, upload images to S3 first
-      // For now, using placeholder URLs
-      const imageUrls = images.map((_, i) => `https://via.placeholder.com/400?text=Image${i + 1}`);
+      // Upload images to Supabase Storage
+      const imageUrls: string[] = [];
+      for (let i = 0; i < images.length; i++) {
+        const uri = images[i];
+        const fileName = `${user.id}/${Date.now()}_${i}.jpg`;
 
-      await api.post(ENDPOINTS.listings, {
+        const response = await fetch(uri);
+        const blob = await response.blob();
+
+        const { error: uploadError } = await supabase.storage
+          .from('listings')
+          .upload(fileName, blob, { upsert: true });
+
+        if (uploadError) {
+          console.error('Image upload error:', uploadError);
+          // Use placeholder if upload fails
+          imageUrls.push(`https://via.placeholder.com/400?text=Image${i + 1}`);
+        } else {
+          const { data } = supabase.storage.from('listings').getPublicUrl(fileName);
+          imageUrls.push(data.publicUrl);
+        }
+      }
+
+      // Insert listing into Supabase
+      const { error } = await supabase.from('listings').insert({
+        user_id: user.id,
         title,
         description,
-        estimatedValue: parseFloat(estimatedValue),
+        estimated_value: parseFloat(estimatedValue),
         category,
-        condition: listingType === 'ITEM' ? condition : undefined,
+        condition: listingType === 'ITEM' ? condition : null,
         type: listingType,
         images: imageUrls,
-        tags: [],
+        status: 'ACTIVE' as const,
       });
+
+      if (error) {
+        throw error;
+      }
 
       Alert.alert('Success!', 'Your listing has been created', [
         { text: 'OK', onPress: () => router.back() },
       ]);
     } catch (error: any) {
+      console.error('Create listing error:', error);
       Alert.alert('Error', error.message || 'Failed to create listing');
     } finally {
       setSubmitting(false);
@@ -112,29 +167,39 @@ export default function CreateListingScreen() {
 
   return (
     <ScrollView
-      style={[styles.container, { paddingTop: insets.top }]}
+      style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}
       contentContainerStyle={styles.content}
     >
-      <Text style={styles.header}>Create Listing</Text>
+      <Text style={[styles.header, { color: colors.text }]}>Create Listing</Text>
 
       {/* Type Selector */}
       <View style={styles.section}>
-        <Text style={styles.label}>Type</Text>
+        <Text style={[styles.label, { color: colors.textSecondary }]}>Type</Text>
         <View style={styles.typeSelector}>
           <TouchableOpacity
-            style={[styles.typeButton, listingType === 'ITEM' && styles.typeButtonActive]}
+            style={[
+              styles.typeButton,
+              { backgroundColor: colors.surface },
+              listingType === 'ITEM' && { borderColor: colors.primary, backgroundColor: colors.primary + '20' }
+            ]}
             onPress={() => setListingType('ITEM')}
           >
-            <Text style={[styles.typeText, listingType === 'ITEM' && styles.typeTextActive]}>
-              📦 Item
+            <MaterialIcons name="inventory-2" size={20} color={listingType === 'ITEM' ? colors.primary : colors.textSecondary} />
+            <Text style={[styles.typeText, { color: colors.textSecondary }, listingType === 'ITEM' && { color: colors.primary }]}>
+              Item
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.typeButton, listingType === 'SERVICE' && styles.typeButtonActive]}
+            style={[
+              styles.typeButton,
+              { backgroundColor: colors.surface },
+              listingType === 'SERVICE' && { borderColor: colors.primary, backgroundColor: colors.primary + '20' }
+            ]}
             onPress={() => setListingType('SERVICE')}
           >
-            <Text style={[styles.typeText, listingType === 'SERVICE' && styles.typeTextActive]}>
-              🛠️ Service
+            <MaterialIcons name="build" size={20} color={listingType === 'SERVICE' ? colors.primary : colors.textSecondary} />
+            <Text style={[styles.typeText, { color: colors.textSecondary }, listingType === 'SERVICE' && { color: colors.primary }]}>
+              Service
             </Text>
           </TouchableOpacity>
         </View>
@@ -142,7 +207,7 @@ export default function CreateListingScreen() {
 
       {/* Images */}
       <View style={styles.section}>
-        <Text style={styles.label}>Photos *</Text>
+        <Text style={[styles.label, { color: colors.textSecondary }]}>Photos *</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <View style={styles.imagesRow}>
             {images.map((uri, index) => (
@@ -152,14 +217,14 @@ export default function CreateListingScreen() {
                   style={styles.removeImage}
                   onPress={() => removeImage(index)}
                 >
-                  <Text style={styles.removeImageText}>✕</Text>
+                  <MaterialIcons name="close" size={14} color="#fff" />
                 </TouchableOpacity>
               </View>
             ))}
             {images.length < 5 && (
-              <TouchableOpacity style={styles.addImage} onPress={pickImage}>
-                <Text style={styles.addImageIcon}>📷</Text>
-                <Text style={styles.addImageText}>Add Photo</Text>
+              <TouchableOpacity style={[styles.addImage, { borderColor: colors.border }]} onPress={pickImage}>
+                <MaterialIcons name="add-a-photo" size={24} color={colors.textMuted} />
+                <Text style={[styles.addImageText, { color: colors.textMuted }]}>Add Photo</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -168,58 +233,94 @@ export default function CreateListingScreen() {
 
       {/* Title */}
       <View style={styles.section}>
-        <Text style={styles.label}>Title *</Text>
+        <Text style={[styles.label, { color: colors.textSecondary }]}>Title *</Text>
         <TextInput
-          style={styles.input}
+          style={[
+            styles.input,
+            { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text },
+            fieldErrors.title && styles.inputError
+          ]}
           placeholder="What are you listing?"
-          placeholderTextColor={Colors.textMuted}
+          placeholderTextColor={colors.textMuted}
           value={title}
-          onChangeText={setTitle}
+          onChangeText={(text) => {
+            setTitle(text);
+            if (fieldErrors.title) setFieldErrors((prev) => ({ ...prev, title: '' }));
+          }}
           maxLength={100}
         />
+        {fieldErrors.title ? (
+          <Text style={styles.errorText}>{fieldErrors.title}</Text>
+        ) : null}
       </View>
 
       {/* Description */}
       <View style={styles.section}>
-        <Text style={styles.label}>Description *</Text>
+        <Text style={[styles.label, { color: colors.textSecondary }]}>Description *</Text>
         <TextInput
-          style={[styles.input, styles.textArea]}
+          style={[
+            styles.input,
+            styles.textArea,
+            { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text },
+            fieldErrors.description && styles.inputError
+          ]}
           placeholder="Describe your item or service..."
-          placeholderTextColor={Colors.textMuted}
+          placeholderTextColor={colors.textMuted}
           value={description}
-          onChangeText={setDescription}
+          onChangeText={(text) => {
+            setDescription(text);
+            if (fieldErrors.description) setFieldErrors((prev) => ({ ...prev, description: '' }));
+          }}
           multiline
           numberOfLines={4}
           maxLength={2000}
         />
+        {fieldErrors.description ? (
+          <Text style={styles.errorText}>{fieldErrors.description}</Text>
+        ) : null}
       </View>
 
       {/* Estimated Value */}
       <View style={styles.section}>
-        <Text style={styles.label}>Estimated Value ($) *</Text>
+        <Text style={[styles.label, { color: colors.textSecondary }]}>Estimated Value ($) *</Text>
         <TextInput
-          style={styles.input}
+          style={[
+            styles.input,
+            { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text },
+            fieldErrors.estimatedValue && styles.inputError
+          ]}
           placeholder="0"
-          placeholderTextColor={Colors.textMuted}
+          placeholderTextColor={colors.textMuted}
           value={estimatedValue}
-          onChangeText={setEstimatedValue}
-          keyboardType="numeric"
+          onChangeText={handleValueChange}
+          keyboardType="decimal-pad"
         />
+        {fieldErrors.estimatedValue ? (
+          <Text style={styles.errorText}>{fieldErrors.estimatedValue}</Text>
+        ) : null}
       </View>
 
       {/* Category */}
       <View style={styles.section}>
-        <Text style={styles.label}>Category *</Text>
+        <Text style={[styles.label, { color: colors.textSecondary }]}>Category *</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <View style={styles.categoryRow}>
             {CATEGORIES.map((cat) => (
               <TouchableOpacity
                 key={cat}
-                style={[styles.categoryChip, category === cat && styles.categoryChipActive]}
+                style={[
+                  styles.categoryChip,
+                  { backgroundColor: colors.surface, borderColor: colors.border },
+                  category === cat && { backgroundColor: colors.primary, borderColor: colors.primary }
+                ]}
                 onPress={() => setCategory(cat)}
               >
                 <Text
-                  style={[styles.categoryText, category === cat && styles.categoryTextActive]}
+                  style={[
+                    styles.categoryText,
+                    { color: colors.textSecondary },
+                    category === cat && { color: colors.textInverse, fontWeight: '600' }
+                  ]}
                 >
                   {cat}
                 </Text>
@@ -232,21 +333,23 @@ export default function CreateListingScreen() {
       {/* Condition (for items only) */}
       {listingType === 'ITEM' && (
         <View style={styles.section}>
-          <Text style={styles.label}>Condition</Text>
+          <Text style={[styles.label, { color: colors.textSecondary }]}>Condition</Text>
           <View style={styles.conditionRow}>
             {CONDITIONS.map((cond) => (
               <TouchableOpacity
                 key={cond.value}
                 style={[
                   styles.conditionChip,
-                  condition === cond.value && styles.conditionChipActive,
+                  { backgroundColor: colors.surface },
+                  condition === cond.value && { backgroundColor: colors.primary },
                 ]}
                 onPress={() => setCondition(cond.value)}
               >
                 <Text
                   style={[
                     styles.conditionText,
-                    condition === cond.value && styles.conditionTextActive,
+                    { color: colors.textSecondary },
+                    condition === cond.value && { color: colors.textInverse, fontWeight: '600' },
                   ]}
                 >
                   {cond.label}
@@ -259,11 +362,11 @@ export default function CreateListingScreen() {
 
       {/* Submit Button */}
       <TouchableOpacity
-        style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
+        style={[styles.submitButton, { backgroundColor: colors.primary }, submitting && styles.submitButtonDisabled]}
         onPress={handleSubmit}
         disabled={submitting}
       >
-        <Text style={styles.submitButtonText}>
+        <Text style={[styles.submitButtonText, { color: colors.textInverse }]}>
           {submitting ? 'Creating...' : 'Create Listing'}
         </Text>
       </TouchableOpacity>
@@ -276,7 +379,6 @@ export default function CreateListingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
   content: {
     padding: Spacing.lg,
@@ -284,7 +386,6 @@ const styles = StyleSheet.create({
   header: {
     fontSize: FontSizes.xxl,
     fontWeight: '700',
-    color: Colors.text,
     marginBottom: Spacing.lg,
   },
   section: {
@@ -293,17 +394,21 @@ const styles = StyleSheet.create({
   label: {
     fontSize: FontSizes.sm,
     fontWeight: '600',
-    color: Colors.textSecondary,
     marginBottom: Spacing.sm,
   },
   input: {
-    backgroundColor: Colors.surface,
     borderRadius: BorderRadius.md,
     padding: Spacing.md,
     fontSize: FontSizes.md,
-    color: Colors.text,
     borderWidth: 1,
-    borderColor: Colors.border,
+  },
+  inputError: {
+    borderColor: Colors.error,
+  },
+  errorText: {
+    fontSize: FontSizes.xs,
+    color: Colors.error,
+    marginTop: 4,
   },
   textArea: {
     minHeight: 100,
@@ -315,24 +420,18 @@ const styles = StyleSheet.create({
   },
   typeButton: {
     flex: 1,
-    backgroundColor: Colors.surface,
+    flexDirection: 'row',
     padding: Spacing.md,
     borderRadius: BorderRadius.md,
     alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 2,
     borderColor: 'transparent',
-  },
-  typeButtonActive: {
-    borderColor: Colors.primary,
-    backgroundColor: Colors.primary + '20',
+    gap: 8,
   },
   typeText: {
     fontSize: FontSizes.md,
     fontWeight: '600',
-    color: Colors.textSecondary,
-  },
-  typeTextActive: {
-    color: Colors.primary,
   },
   imagesRow: {
     flexDirection: 'row',
@@ -357,28 +456,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  removeImageText: {
-    color: Colors.white,
-    fontSize: 12,
-    fontWeight: '600',
-  },
   addImage: {
     width: 100,
     height: 100,
     borderRadius: BorderRadius.md,
     borderWidth: 2,
     borderStyle: 'dashed',
-    borderColor: Colors.border,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  addImageIcon: {
-    fontSize: 24,
-    marginBottom: Spacing.xs,
+    gap: 4,
   },
   addImageText: {
     fontSize: FontSizes.xs,
-    color: Colors.textMuted,
   },
   categoryRow: {
     flexDirection: 'row',
@@ -388,21 +477,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.round,
-    backgroundColor: Colors.surface,
     borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  categoryChipActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
   },
   categoryText: {
     fontSize: FontSizes.sm,
-    color: Colors.textSecondary,
-  },
-  categoryTextActive: {
-    color: Colors.white,
-    fontWeight: '600',
   },
   conditionRow: {
     flexDirection: 'row',
@@ -413,21 +491,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.sm,
-    backgroundColor: Colors.surface,
-  },
-  conditionChipActive: {
-    backgroundColor: Colors.primary,
   },
   conditionText: {
     fontSize: FontSizes.sm,
-    color: Colors.textSecondary,
-  },
-  conditionTextActive: {
-    color: Colors.white,
-    fontWeight: '600',
   },
   submitButton: {
-    backgroundColor: Colors.primary,
     borderRadius: BorderRadius.lg,
     padding: Spacing.lg,
     alignItems: 'center',
@@ -439,6 +507,5 @@ const styles = StyleSheet.create({
   submitButtonText: {
     fontSize: FontSizes.lg,
     fontWeight: '700',
-    color: Colors.white,
   },
 });

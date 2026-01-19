@@ -1,7 +1,7 @@
-// API Configuration
-export const API_BASE_URL = __DEV__
-  ? 'http://localhost:3001/api/v1'
-  : 'https://api.barter.app/api/v1';
+import { config } from './config';
+
+// API Configuration - reads from app.config.ts based on APP_ENV
+export const API_BASE_URL = config.apiUrl;
 
 export const ENDPOINTS = {
   // Auth

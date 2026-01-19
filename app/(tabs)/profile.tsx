@@ -70,7 +70,7 @@ export default function ProfileScreen() {
   const handleMenuItemPress = (label: string) => {
     switch (label) {
       case 'Edit Profile':
-        Alert.alert('Edit Profile', 'Profile editing will be available soon!');
+        router.push('/edit-profile');
         break;
       case 'Appearance':
         router.push('/settings');
@@ -138,7 +138,7 @@ export default function ProfileScreen() {
                   {user?.displayName?.charAt(0) || '?'}
                 </Text>
               </View>
-              <View style={[styles.verifiedBadge, { backgroundColor: colors.primary }]}>
+              <View style={[styles.verifiedBadge, { backgroundColor: colors.primary, borderColor: colors.background }]}>
                 <MaterialIcons name="verified" size={16} color={colors.textInverse} />
               </View>
             </View>
@@ -381,7 +381,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 3,
-    borderColor: '#0A0A0A',
   },
   displayName: {
     fontSize: 24,

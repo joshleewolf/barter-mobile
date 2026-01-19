@@ -20,10 +20,14 @@ function AppContent() {
         <Stack.Screen name="index" />
         <Stack.Screen name="(auth)" options={{ animation: 'fade' }} />
         <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
+        <Stack.Screen name="onboarding" options={{ animation: 'slide_from_right', gestureEnabled: false }} />
         <Stack.Screen name="listing/[id]" options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="offer/[id]" />
         <Stack.Screen name="chat/[id]" />
         <Stack.Screen name="settings" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="edit-profile" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="marketplace" options={{ animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="trade-unlocked" options={{ animation: 'fade', presentation: 'fullScreenModal' }} />
       </Stack>
       <StatusBar style={isDark ? 'light' : 'dark'} />
     </AuthContext.Provider>
