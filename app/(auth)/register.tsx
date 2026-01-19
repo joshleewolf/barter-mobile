@@ -13,7 +13,8 @@ import {
 import { useRouter, Link } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../hooks/useAuth';
-import { Colors, Spacing, BorderRadius, FontSizes } from '../../constants/theme';
+import { useTheme } from '../../hooks/useTheme';
+import { Spacing, BorderRadius, FontSizes } from '../../constants/theme';
 import {
   validateRegistrationForm,
   validatePasswordStrength,
@@ -25,6 +26,7 @@ export default function RegisterScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { register } = useAuth();
+  const { colors } = useTheme();
 
   const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
@@ -83,7 +85,7 @@ export default function RegisterScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: Colors.background }}
+      style={{ flex: 1, backgroundColor: colors.background }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView
@@ -93,17 +95,17 @@ export default function RegisterScreen() {
         ]}
       >
         <View style={styles.header}>
-          <Text style={styles.logo}>Barter</Text>
-          <Text style={styles.subtitle}>Create your account</Text>
+          <Text style={[styles.logo, { color: colors.primary }]}>Barter</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Create your account</Text>
         </View>
 
         <View style={styles.form}>
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Display Name</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>Display Name</Text>
             <TextInput
-              style={[styles.input, fieldErrors.displayName && styles.inputError]}
+              style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }, fieldErrors.displayName && { borderColor: colors.error }]}
               placeholder="How should we call you?"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={colors.textMuted}
               value={displayName}
               onChangeText={(text) => {
                 setDisplayName(text);
@@ -112,16 +114,16 @@ export default function RegisterScreen() {
               autoCapitalize="words"
             />
             {fieldErrors.displayName ? (
-              <Text style={styles.errorText}>{fieldErrors.displayName}</Text>
+              <Text style={[styles.errorText, { color: colors.error }]}>{fieldErrors.displayName}</Text>
             ) : null}
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Username</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>Username</Text>
             <TextInput
-              style={[styles.input, fieldErrors.username && styles.inputError]}
+              style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }, fieldErrors.username && { borderColor: colors.error }]}
               placeholder="Choose a unique username"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={colors.textMuted}
               value={username}
               onChangeText={(text) => {
                 setUsername(text.toLowerCase().replace(/[^a-z0-9_]/g, ''));
@@ -131,16 +133,16 @@ export default function RegisterScreen() {
               autoCapitalize="none"
             />
             {fieldErrors.username ? (
-              <Text style={styles.errorText}>{fieldErrors.username}</Text>
+              <Text style={[styles.errorText, { color: colors.error }]}>{fieldErrors.username}</Text>
             ) : null}
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>Email</Text>
             <TextInput
-              style={[styles.input, fieldErrors.email && styles.inputError]}
+              style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }, fieldErrors.email && { borderColor: colors.error }]}
               placeholder="you@example.com"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={colors.textMuted}
               value={email}
               onChangeText={(text) => {
                 setEmail(text);
@@ -152,16 +154,16 @@ export default function RegisterScreen() {
               autoComplete="email"
             />
             {fieldErrors.email ? (
-              <Text style={styles.errorText}>{fieldErrors.email}</Text>
+              <Text style={[styles.errorText, { color: colors.error }]}>{fieldErrors.email}</Text>
             ) : null}
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Password</Text>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>Password</Text>
             <TextInput
-              style={[styles.input, fieldErrors.password && styles.inputError]}
+              style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }, fieldErrors.password && { borderColor: colors.error }]}
               placeholder="At least 8 characters"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={colors.textMuted}
               value={password}
               onChangeText={(text) => {
                 setPassword(text);
@@ -171,13 +173,13 @@ export default function RegisterScreen() {
               autoComplete="new-password"
             />
             {fieldErrors.password ? (
-              <Text style={styles.errorText}>{fieldErrors.password}</Text>
+              <Text style={[styles.errorText, { color: colors.error }]}>{fieldErrors.password}</Text>
             ) : null}
 
             {/* Password Strength Indicator */}
             {password.length > 0 && (
               <View style={styles.strengthContainer}>
-                <View style={styles.strengthBar}>
+                <View style={[styles.strengthBar, { backgroundColor: colors.border }]}>
                   <View
                     style={[
                       styles.strengthFill,
@@ -200,43 +202,48 @@ export default function RegisterScreen() {
                 <RequirementItem
                   met={passwordStrength.requirements.minLength}
                   text="At least 8 characters"
+                  colors={colors}
                 />
                 <RequirementItem
                   met={passwordStrength.requirements.hasUppercase}
                   text="One uppercase letter"
+                  colors={colors}
                 />
                 <RequirementItem
                   met={passwordStrength.requirements.hasLowercase}
                   text="One lowercase letter"
+                  colors={colors}
                 />
                 <RequirementItem
                   met={passwordStrength.requirements.hasNumber}
                   text="One number"
+                  colors={colors}
                 />
                 <RequirementItem
                   met={passwordStrength.requirements.hasSpecial}
                   text="One special character"
+                  colors={colors}
                 />
               </View>
             )}
           </View>
 
           <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
+            style={[styles.button, { backgroundColor: colors.primary }, loading && styles.buttonDisabled]}
             onPress={handleRegister}
             disabled={loading}
           >
-            <Text style={styles.buttonText}>
+            <Text style={[styles.buttonText, { color: colors.textInverse }]}>
               {loading ? 'Creating account...' : 'Create Account'}
             </Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Already have an account?</Text>
+          <Text style={[styles.footerText, { color: colors.textSecondary }]}>Already have an account?</Text>
           <Link href="/(auth)/login" asChild>
             <TouchableOpacity>
-              <Text style={styles.linkText}>Sign in</Text>
+              <Text style={[styles.linkText, { color: colors.primary }]}>Sign in</Text>
             </TouchableOpacity>
           </Link>
         </View>
@@ -245,9 +252,9 @@ export default function RegisterScreen() {
   );
 }
 
-function RequirementItem({ met, text }: { met: boolean; text: string }) {
+function RequirementItem({ met, text, colors }: { met: boolean; text: string; colors: any }) {
   return (
-    <Text style={[styles.requirementText, met && styles.requirementMet]}>
+    <Text style={[styles.requirementText, { color: met ? colors.success : colors.textMuted }]}>
       {met ? '✓' : '○'} {text}
     </Text>
   );
@@ -265,11 +272,9 @@ const styles = StyleSheet.create({
   logo: {
     fontSize: FontSizes.hero,
     fontWeight: '800',
-    color: Colors.primary,
   },
   subtitle: {
     fontSize: FontSizes.lg,
-    color: Colors.textSecondary,
     marginTop: Spacing.sm,
   },
   form: {
@@ -280,24 +285,17 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: FontSizes.sm,
-    color: Colors.textSecondary,
     fontWeight: '500',
   },
   input: {
-    backgroundColor: Colors.surface,
     borderRadius: BorderRadius.md,
     padding: Spacing.md,
     fontSize: FontSizes.md,
-    color: Colors.text,
     borderWidth: 1,
-    borderColor: Colors.border,
   },
-  inputError: {
-    borderColor: Colors.error,
-  },
+  inputError: {},
   errorText: {
     fontSize: FontSizes.xs,
-    color: Colors.error,
     marginTop: 2,
   },
   strengthContainer: {
@@ -309,7 +307,6 @@ const styles = StyleSheet.create({
   strengthBar: {
     flex: 1,
     height: 4,
-    backgroundColor: Colors.border,
     borderRadius: 2,
     overflow: 'hidden',
   },
@@ -328,13 +325,9 @@ const styles = StyleSheet.create({
   },
   requirementText: {
     fontSize: FontSizes.xs,
-    color: Colors.textMuted,
   },
-  requirementMet: {
-    color: Colors.success,
-  },
+  requirementMet: {},
   button: {
-    backgroundColor: Colors.primary,
     borderRadius: BorderRadius.md,
     padding: Spacing.md,
     alignItems: 'center',
@@ -344,7 +337,6 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    color: Colors.white,
     fontSize: FontSizes.lg,
     fontWeight: '600',
   },
@@ -356,11 +348,9 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
   },
   footerText: {
-    color: Colors.textSecondary,
     fontSize: FontSizes.md,
   },
   linkText: {
-    color: Colors.primary,
     fontSize: FontSizes.md,
     fontWeight: '600',
   },

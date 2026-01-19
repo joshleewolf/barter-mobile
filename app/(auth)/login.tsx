@@ -12,12 +12,14 @@ import {
 import { useRouter, Link } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../hooks/useAuth';
-import { Colors, Spacing, BorderRadius, FontSizes } from '../../constants/theme';
+import { useTheme } from '../../hooks/useTheme';
+import { Spacing, BorderRadius, FontSizes } from '../../constants/theme';
 
 export default function LoginScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { login } = useAuth();
+  const { colors } = useTheme();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -43,21 +45,21 @@ export default function LoginScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={[styles.container, { paddingTop: insets.top + Spacing.xl }]}
+      style={[styles.container, { paddingTop: insets.top + Spacing.xl, backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.header}>
-        <Text style={styles.logo}>Barter</Text>
-        <Text style={styles.subtitle}>Welcome back</Text>
+        <Text style={[styles.logo, { color: colors.primary }]}>Barter</Text>
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Welcome back</Text>
       </View>
 
       <View style={styles.form}>
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Email</Text>
+          <Text style={[styles.label, { color: colors.textSecondary }]}>Email</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
             placeholder="you@example.com"
-            placeholderTextColor={Colors.textMuted}
+            placeholderTextColor={colors.textMuted}
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
@@ -67,11 +69,11 @@ export default function LoginScreen() {
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Password</Text>
+          <Text style={[styles.label, { color: colors.textSecondary }]}>Password</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.text }]}
             placeholder="Enter your password"
-            placeholderTextColor={Colors.textMuted}
+            placeholderTextColor={colors.textMuted}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -80,21 +82,21 @@ export default function LoginScreen() {
         </View>
 
         <TouchableOpacity
-          style={[styles.button, loading && styles.buttonDisabled]}
+          style={[styles.button, { backgroundColor: colors.primary }, loading && styles.buttonDisabled]}
           onPress={handleLogin}
           disabled={loading}
         >
-          <Text style={styles.buttonText}>
+          <Text style={[styles.buttonText, { color: colors.textInverse }]}>
             {loading ? 'Signing in...' : 'Sign In'}
           </Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.footer}>
-        <Text style={styles.footerText}>Don't have an account?</Text>
+        <Text style={[styles.footerText, { color: colors.textSecondary }]}>Don't have an account?</Text>
         <Link href="/(auth)/register" asChild>
           <TouchableOpacity>
-            <Text style={styles.linkText}>Create one</Text>
+            <Text style={[styles.linkText, { color: colors.primary }]}>Create one</Text>
           </TouchableOpacity>
         </Link>
       </View>
@@ -105,7 +107,6 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
     padding: Spacing.lg,
   },
   header: {
@@ -115,11 +116,9 @@ const styles = StyleSheet.create({
   logo: {
     fontSize: FontSizes.hero,
     fontWeight: '800',
-    color: Colors.primary,
   },
   subtitle: {
     fontSize: FontSizes.lg,
-    color: Colors.textSecondary,
     marginTop: Spacing.sm,
   },
   form: {
@@ -130,20 +129,15 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: FontSizes.sm,
-    color: Colors.textSecondary,
     fontWeight: '500',
   },
   input: {
-    backgroundColor: Colors.surface,
     borderRadius: BorderRadius.md,
     padding: Spacing.md,
     fontSize: FontSizes.md,
-    color: Colors.text,
     borderWidth: 1,
-    borderColor: Colors.border,
   },
   button: {
-    backgroundColor: Colors.primary,
     borderRadius: BorderRadius.md,
     padding: Spacing.md,
     alignItems: 'center',
@@ -153,7 +147,6 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    color: Colors.white,
     fontSize: FontSizes.lg,
     fontWeight: '600',
   },
@@ -165,11 +158,9 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
   },
   footerText: {
-    color: Colors.textSecondary,
     fontSize: FontSizes.md,
   },
   linkText: {
-    color: Colors.primary,
     fontSize: FontSizes.md,
     fontWeight: '600',
   },
