@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -18,9 +18,26 @@ import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useTheme } from '../../hooks/useTheme';
+import { useAuth } from '../../hooks/useAuth';
 import { Colors } from '../../constants/theme';
 import { MOCK_LISTINGS, MOCK_USER_LISTINGS } from '../../services/mockData';
 import { tradeService } from '../../services/matchService';
+
+// Map onboarding category IDs to listing category names
+const CATEGORY_ID_TO_NAME: Record<string, string[]> = {
+  'vintage-clothing': ['Clothing', 'Vintage'],
+  'cars': ['Cars', 'Vehicles', 'Automotive'],
+  'electronics': ['Electronics', 'Services'], // Services often tech-related
+  'sneakers': ['Sneakers', 'Shoes', 'Footwear'],
+  'furniture': ['Furniture', 'Home & Garden'],
+  'art': ['Art', 'Collectibles', 'Services'],
+  'music': ['Music'],
+  'sports': ['Sports'],
+  'books': ['Books', 'Media'],
+  'jewelry': ['Jewelry', 'Watches'],
+  'gaming': ['Games', 'Gaming'],
+  'home': ['Home', 'Home & Garden'],
+};
 import {
   useFavorites,
   useSelectedTradeItem,
@@ -61,6 +78,7 @@ export default function DiscoverScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { colors } = useTheme();
+  const { user } = useAuth();
 
   // Persisted state
   const [favorites, toggleFavorite] = useFavorites();
@@ -127,7 +145,26 @@ export default function DiscoverScreen() {
     extrapolate: 'clamp',
   });
 
-  const listings = MOCK_LISTINGS as Listing[];
+  // Filter listings based on user's selected interests from onboarding
+  const allListings = MOCK_LISTINGS as Listing[];
+  const listings = useMemo(() => {
+    return allListings.filter((listing) => {
+      // If user has no interests set, show all listings
+      if (!user?.interests || user.interests.length === 0) {
+        return true;
+      }
+
+      // Check if listing category matches any of user's interests
+      const listingCategory = listing.category?.toLowerCase() || '';
+      return user.interests.some((interestId) => {
+        const matchingCategories = CATEGORY_ID_TO_NAME[interestId] || [];
+        return matchingCategories.some(
+          (cat) => cat.toLowerCase() === listingCategory ||
+                   listingCategory.includes(cat.toLowerCase())
+        );
+      });
+    });
+  }, [user?.interests, allListings]);
   const currentListing = listings[currentIndex];
 
   // Ref to hold the latest callback - this solves the stale closure problem
@@ -265,9 +302,36 @@ export default function DiscoverScreen() {
   };
 
   if (!currentListing) {
+    const hasInterests = user?.interests && user.interests.length > 0;
+    const noMatchingListings = listings.length === 0 && hasInterests;
+
     return (
       <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
-        <Text style={[styles.emptyText, { color: colors.textMuted }]}>No more items to discover</Text>
+        <View style={styles.emptyStateContainer}>
+          <MaterialIcons
+            name={noMatchingListings ? "filter-list" : "explore"}
+            size={48}
+            color={colors.textMuted}
+          />
+          <Text style={[styles.emptyTitle, { color: colors.text }]}>
+            {noMatchingListings ? 'No items in your categories' : 'No more items to discover'}
+          </Text>
+          <Text style={[styles.emptyText, { color: colors.textMuted }]}>
+            {noMatchingListings
+              ? 'Try updating your interests in profile settings to see more items'
+              : 'Check back later for new listings'}
+          </Text>
+          {noMatchingListings && (
+            <TouchableOpacity
+              style={[styles.emptyActionButton, { backgroundColor: colors.primary }]}
+              onPress={() => router.push('/profile')}
+            >
+              <Text style={[styles.emptyActionButtonText, { color: colors.textInverse }]}>
+                Update Interests
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
     );
   }
@@ -1313,10 +1377,34 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     marginTop: 20,
   },
+  emptyStateContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginTop: 16,
+    marginBottom: 8,
+  },
   emptyText: {
     fontSize: 16,
     color: 'rgba(255, 255, 255, 0.6)',
     textAlign: 'center',
+    lineHeight: 22,
+  },
+  emptyActionButton: {
+    marginTop: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 9999,
+  },
+  emptyActionButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
   modalOverlay: {
     flex: 1,
