@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase, type Database } from '../services/supabase';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
+import { clearUserStorage } from './useStorage';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
@@ -182,6 +183,9 @@ export function useAuthProvider(): AuthContextType {
   const logout = useCallback(async () => {
     setIsLoading(true);
     try {
+      // Clear user-related storage (selected trade item, favorites, etc.)
+      await clearUserStorage();
+
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error('Logout error:', error);

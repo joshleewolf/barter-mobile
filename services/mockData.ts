@@ -23,6 +23,7 @@ export const MOCK_LISTINGS = [
     tags: ['apple', 'smartphone', 'tech'],
     viewCount: 234,
     createdAt: new Date().toISOString(),
+    location: { latitude: 37.7849, longitude: -122.4094, name: 'San Francisco, CA' },
     user: {
       id: 'user-2',
       username: 'techie_mike',
@@ -45,6 +46,7 @@ export const MOCK_LISTINGS = [
     tags: ['guitar', 'gibson', 'vintage', 'music'],
     viewCount: 156,
     createdAt: new Date().toISOString(),
+    location: { latitude: 37.7749, longitude: -122.4294, name: 'Hayes Valley, SF' },
     user: {
       id: 'user-3',
       username: 'guitar_hero',
@@ -67,6 +69,7 @@ export const MOCK_LISTINGS = [
     tags: ['bike', 'mountain bike', 'trek', 'outdoor'],
     viewCount: 89,
     createdAt: new Date().toISOString(),
+    location: { latitude: 37.7649, longitude: -122.4494, name: 'Golden Gate Park' },
     user: {
       id: 'user-4',
       username: 'trail_blazer',
@@ -89,6 +92,7 @@ export const MOCK_LISTINGS = [
     tags: ['photography', 'portraits', 'professional'],
     viewCount: 67,
     createdAt: new Date().toISOString(),
+    location: { latitude: 37.7949, longitude: -122.3994, name: 'SOMA, SF' },
     user: {
       id: 'user-5',
       username: 'lens_master',
@@ -111,6 +115,7 @@ export const MOCK_LISTINGS = [
     tags: ['playstation', 'gaming', 'ps5', 'console'],
     viewCount: 312,
     createdAt: new Date().toISOString(),
+    location: { latitude: 37.7549, longitude: -122.4194, name: 'Mission District, SF' },
     user: {
       id: 'user-6',
       username: 'gamer_pro',
@@ -133,6 +138,7 @@ export const MOCK_LISTINGS = [
     tags: ['office', 'chair', 'ergonomic', 'herman miller'],
     viewCount: 145,
     createdAt: new Date().toISOString(),
+    location: { latitude: 37.7899, longitude: -122.4014, name: 'Financial District, SF' },
     user: {
       id: 'user-7',
       username: 'office_upgrade',

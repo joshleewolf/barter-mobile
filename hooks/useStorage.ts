@@ -83,7 +83,7 @@ interface UserListing {
   status: string;
 }
 
-export function useSelectedTradeItem(): [
+export function useSelectedTradeItem(userId?: string | null): [
   UserListing | null,
   (item: UserListing | null) => void,
   boolean // isLoaded
@@ -91,22 +91,27 @@ export function useSelectedTradeItem(): [
   const [item, setItem] = useState<UserListing | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Load from storage on mount
+  // Load from storage on mount and when userId changes (login/logout)
   useEffect(() => {
     const loadItem = async () => {
+      setIsLoaded(false);
       try {
         const stored = await AsyncStorage.getItem(STORAGE_KEYS.SELECTED_TRADE_ITEM);
         if (stored !== null) {
           setItem(JSON.parse(stored));
+        } else {
+          // Storage was cleared (logout) - reset to null
+          setItem(null);
         }
       } catch (error) {
         console.error('Failed to load selected trade item:', error);
+        setItem(null);
       } finally {
         setIsLoaded(true);
       }
     };
     loadItem();
-  }, []);
+  }, [userId]); // Re-run when user changes
 
   const updateItem = useCallback((newItem: UserListing | null) => {
     setItem(newItem);
@@ -165,6 +170,21 @@ export function useViewModePreference(): [
   );
 
   return [mode, setMode];
+}
+
+// Clear all user-related storage (for sign out)
+export async function clearUserStorage(): Promise<void> {
+  try {
+    await AsyncStorage.multiRemove([
+      STORAGE_KEYS.FAVORITES,
+      STORAGE_KEYS.SELECTED_TRADE_ITEM,
+      STORAGE_KEYS.FILTER_PREFERENCES,
+      STORAGE_KEYS.VIEW_MODE,
+      // Keep theme preference - it's a device preference, not user-specific
+    ]);
+  } catch (error) {
+    console.error('Failed to clear user storage:', error);
+  }
 }
 
 // Export storage keys for direct access if needed

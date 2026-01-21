@@ -181,6 +181,35 @@ export type Database = {
         };
         Relationships: [];
       };
+      push_tokens: {
+        Row: {
+          id: string;
+          user_id: string;
+          token: string;
+          token_type: string;
+          platform: string;
+          device_name: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          token: string;
+          token_type?: string;
+          platform: string;
+          device_name?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          token?: string;
+          token_type?: string;
+          platform?: string;
+          device_name?: string | null;
+        };
+        Relationships: [];
+      };
     };
     Views: {};
     Functions: {};

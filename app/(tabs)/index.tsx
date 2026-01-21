@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -22,6 +22,10 @@ import { useAuth } from '../../hooks/useAuth';
 import { Colors } from '../../constants/theme';
 import { MOCK_LISTINGS, MOCK_USER_LISTINGS } from '../../services/mockData';
 import { tradeService } from '../../services/matchService';
+import Constants from 'expo-constants';
+
+// Check if we're in Expo Go (no native modules available)
+const isExpoGo = Constants.appOwnership === 'expo';
 
 // Map onboarding category IDs to listing category names
 const CATEGORY_ID_TO_NAME: Record<string, string[]> = {
@@ -56,15 +60,21 @@ interface UserListing {
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.25;
 
+interface ListingLocation {
+  latitude: number;
+  longitude: number;
+  name: string;
+}
+
 interface Listing {
   id: string;
   title: string;
   description: string;
   category: string;
-  condition: string;
+  condition: string | null;
   estimatedValue: number;
   images: string[];
-  location?: string;
+  location?: string | ListingLocation;
   user: {
     id: string;
     displayName: string;
@@ -74,15 +84,22 @@ interface Listing {
 const CATEGORIES = ['All', 'Electronics', 'Clothing', 'Home', 'Sports', 'Music', 'Games'];
 const DISTANCES = ['Any', '5 miles', '10 miles', '25 miles', '50 miles'];
 
+// Helper to extract location text from location field (string or object)
+const getLocationText = (location?: string | ListingLocation, fallback = '2.5 mi away'): string => {
+  if (!location) return fallback;
+  if (typeof location === 'string') return location;
+  return location.name || fallback;
+};
+
 export default function DiscoverScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { colors } = useTheme();
   const { user } = useAuth();
 
-  // Persisted state
+  // Persisted state - pass user.id so it reloads when user changes (login/logout)
   const [favorites, toggleFavorite] = useFavorites();
-  const [selectedTradeItem, setSelectedTradeItem, isTradeItemLoaded] = useSelectedTradeItem();
+  const [selectedTradeItem, setSelectedTradeItem, isTradeItemLoaded] = useSelectedTradeItem(user?.id);
   const [filterPrefs, updateFilterPrefs] = useFilterPreferences();
   const [viewMode, setViewModePreference] = useViewModePreference();
 
@@ -102,40 +119,34 @@ export default function DiscoverScreen() {
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [pinPosition, setPinPosition] = useState({ x: 0.5, y: 0.5 });
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedMapItem, setSelectedMapItem] = useState<Listing | null>(null);
   const [showItemSelectionModal, setShowItemSelectionModal] = useState(false);
+  const [dismissedInfoCard, setDismissedInfoCard] = useState(false);
 
   const userListings = MOCK_USER_LISTINGS as UserListing[];
 
-  // Generate random but consistent positions for items on the map
-  const getItemMapPosition = (_itemId: string, index: number) => {
-    // Use index to create a spread pattern around center
-    const angle = (index * 137.5) % 360; // Golden angle for good distribution
-    const radius = 0.15 + (index % 5) * 0.08; // Varying distances from center
-    const x = 0.5 + radius * Math.cos(angle * Math.PI / 180);
-    const y = 0.5 + radius * Math.sin(angle * Math.PI / 180);
-    return {
-      x: Math.max(0.1, Math.min(0.9, x)),
-      y: Math.max(0.1, Math.min(0.9, y)),
-    };
-  };
+  // Auto-show trade item selection modal when user has no item selected (fresh login)
+  useEffect(() => {
+    if (isTradeItemLoaded && selectedTradeItem === null) {
+      const timer = setTimeout(() => {
+        setShowItemSelectionModal(true);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isTradeItemLoaded, selectedTradeItem, user?.id]);
 
-  // Cycle through view modes
+  // Cycle through all 3 view modes: swipe → grid → map → swipe
   const cycleViewMode = () => {
-    let nextMode: 'swipe' | 'grid' | 'map';
     if (viewMode === 'swipe') {
-      nextMode = 'grid';
+      setViewModePreference('grid');
     } else if (viewMode === 'grid') {
-      nextMode = 'map';
+      setViewModePreference('map');
     } else {
-      nextMode = 'swipe';
+      setViewModePreference('swipe');
       // When switching to swipe mode, prompt for item selection if none selected
       if (!selectedTradeItem) {
         setShowItemSelectionModal(true);
       }
     }
-    setViewModePreference(nextMode);
-    setSelectedMapItem(null);
   };
 
   const position = useRef(new Animated.ValueXY()).current;
@@ -147,8 +158,8 @@ export default function DiscoverScreen() {
 
   // Filter listings based on user's selected interests from onboarding
   const allListings = MOCK_LISTINGS as Listing[];
-  const listings = useMemo(() => {
-    return allListings.filter((listing) => {
+  const { matchedListings, hasMatchingListings } = useMemo(() => {
+    const matched = allListings.filter((listing) => {
       // If user has no interests set, show all listings
       if (!user?.interests || user.interests.length === 0) {
         return true;
@@ -164,15 +175,25 @@ export default function DiscoverScreen() {
         );
       });
     });
+    return { matchedListings: matched, hasMatchingListings: matched.length > 0 };
   }, [user?.interests, allListings]);
-  const currentListing = listings[currentIndex];
+
+  // Show info card as first "card" if no matching listings and user has interests set
+  const showInfoCard = !hasMatchingListings && user?.interests && user.interests.length > 0 && !dismissedInfoCard;
+
+  // Use matched listings if available, otherwise show all listings (after info card is dismissed or as fallback)
+  const listings = hasMatchingListings ? matchedListings : allListings;
+
+  // Adjust index: if showing info card, index 0 is the info card, actual listings start at index 1
+  const effectiveIndex = showInfoCard ? currentIndex - 1 : currentIndex;
+  const currentListing = showInfoCard && currentIndex === 0 ? null : listings[effectiveIndex];
 
   // Ref to hold the latest callback - this solves the stale closure problem
   const swipeHandlerRef = useRef<{
     onSwipeRight: () => void;
     onSwipeLeft: () => void;
     onReset: () => void;
-  }>();
+  }>(null);
 
   const panResponder = useRef(
     PanResponder.create({
@@ -247,6 +268,19 @@ export default function DiscoverScreen() {
   // Keep swipeHandlerRef updated with current state values
   swipeHandlerRef.current = {
     onSwipeRight: () => {
+      // If showing info card, just dismiss it on any swipe
+      if (showInfoCard && currentIndex === 0) {
+        Animated.timing(position, {
+          toValue: { x: SCREEN_WIDTH + 100, y: 0 },
+          duration: 200,
+          useNativeDriver: false,
+        }).start(() => {
+          setDismissedInfoCard(true);
+          setCurrentIndex(0);
+          position.setValue({ x: 0, y: 0 });
+        });
+        return;
+      }
       if (!isTradeItemLoaded) {
         resetPosition();
         return;
@@ -259,6 +293,19 @@ export default function DiscoverScreen() {
       swipeRight();
     },
     onSwipeLeft: () => {
+      // If showing info card, just dismiss it on any swipe
+      if (showInfoCard && currentIndex === 0) {
+        Animated.timing(position, {
+          toValue: { x: -SCREEN_WIDTH - 100, y: 0 },
+          duration: 200,
+          useNativeDriver: false,
+        }).start(() => {
+          setDismissedInfoCard(true);
+          setCurrentIndex(0);
+          position.setValue({ x: 0, y: 0 });
+        });
+        return;
+      }
       if (!isTradeItemLoaded) {
         resetPosition();
         return;
@@ -275,7 +322,14 @@ export default function DiscoverScreen() {
 
   const nextCard = () => {
     position.setValue({ x: 0, y: 0 });
-    setCurrentIndex((prev) => (prev + 1) % listings.length);
+    // If we're at the info card, dismiss it and move to first real listing
+    if (showInfoCard && currentIndex === 0) {
+      setDismissedInfoCard(true);
+      setCurrentIndex(0); // Start at first listing
+    } else {
+      const maxIndex = showInfoCard ? listings.length : listings.length - 1;
+      setCurrentIndex((prev) => Math.min(prev + 1, maxIndex));
+    }
   };
 
   const handleSkip = () => {
@@ -301,36 +355,20 @@ export default function DiscoverScreen() {
     swipeRight();
   };
 
-  if (!currentListing) {
-    const hasInterests = user?.interests && user.interests.length > 0;
-    const noMatchingListings = listings.length === 0 && hasInterests;
+  // Show true empty state only when we've gone through all listings
+  const isAtEndOfListings = !showInfoCard && effectiveIndex >= listings.length;
 
+  if (isAtEndOfListings && listings.length > 0) {
     return (
       <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
         <View style={styles.emptyStateContainer}>
-          <MaterialIcons
-            name={noMatchingListings ? "filter-list" : "explore"}
-            size={48}
-            color={colors.textMuted}
-          />
+          <MaterialIcons name="explore" size={48} color={colors.textMuted} />
           <Text style={[styles.emptyTitle, { color: colors.text }]}>
-            {noMatchingListings ? 'No items in your categories' : 'No more items to discover'}
+            No more items to discover
           </Text>
           <Text style={[styles.emptyText, { color: colors.textMuted }]}>
-            {noMatchingListings
-              ? 'Try updating your interests in profile settings to see more items'
-              : 'Check back later for new listings'}
+            Check back later for new listings
           </Text>
-          {noMatchingListings && (
-            <TouchableOpacity
-              style={[styles.emptyActionButton, { backgroundColor: colors.primary }]}
-              onPress={() => router.push('/profile')}
-            >
-              <Text style={[styles.emptyActionButtonText, { color: colors.textInverse }]}>
-                Update Interests
-              </Text>
-            </TouchableOpacity>
-          )}
         </View>
       </View>
     );
@@ -389,63 +427,99 @@ export default function DiscoverScreen() {
           ]}
           {...panResponder.panHandlers}
         >
-          {/* Card Image */}
-          <Image
-            source={{ uri: currentListing.images[0] || 'https://via.placeholder.com/400' }}
-            style={styles.cardImage}
-            resizeMode="cover"
-          />
-
-          {/* Gradient Overlays */}
-          <LinearGradient
-            colors={['rgba(0,0,0,0.3)', 'transparent', 'transparent']}
-            style={styles.topGradient}
-          />
-          <LinearGradient
-            colors={['transparent', 'rgba(0,0,0,0.2)', 'rgba(0,0,0,0.8)']}
-            style={styles.bottomGradient}
-          />
-
-          {/* Card Content */}
-          <View style={styles.cardContent}>
-            {/* Tags */}
-            <View style={styles.tagsRow}>
-              <View style={styles.categoryTag}>
-                <Text style={styles.categoryTagText}>
-                  {currentListing.category?.toUpperCase() || 'ITEM'}
-                </Text>
+          {/* Info Card - shown when no matching listings */}
+          {showInfoCard && currentIndex === 0 ? (
+            <>
+              <View style={[styles.infoCardBackground, { backgroundColor: colors.primary }]}>
+                <MaterialIcons name="category" size={80} color="rgba(0,0,0,0.15)" style={{ position: 'absolute', top: 40, right: 20 }} />
+                <MaterialIcons name="swipe" size={60} color="rgba(0,0,0,0.1)" style={{ position: 'absolute', bottom: 120, left: 20 }} />
               </View>
-              <View style={styles.conditionTag}>
-                <Text style={styles.conditionTagText}>
-                  {currentListing.condition || 'Good Condition'}
-                </Text>
-              </View>
-            </View>
-
-            {/* Title */}
-            <Text style={styles.cardTitle}>{currentListing.title}</Text>
-
-            {/* Location */}
-            <View style={styles.locationRow}>
-              <MaterialIcons name="location-on" size={18} color="rgba(255,255,255,0.8)" />
-              <Text style={styles.locationText}>
-                {currentListing.location || 'Brooklyn, 2.5 miles away'}
-              </Text>
-            </View>
-
-            {/* Watchers */}
-            <View style={styles.watchersRow}>
-              <View style={styles.watcherAvatars}>
-                <View style={[styles.watcherAvatar, { backgroundColor: '#64748b' }]}>
-                  <Text style={styles.watcherInitials}>JD</Text>
+              <View style={styles.infoCardContent}>
+                <View style={styles.infoCardIcon}>
+                  <MaterialIcons name="info-outline" size={32} color={colors.primary} />
                 </View>
-                <View style={[styles.watcherAvatar, { backgroundColor: '#94a3b8', marginLeft: -8 }]}>
-                  <Text style={styles.watcherInitials}>MK</Text>
+                <Text style={[styles.infoCardTitle, { color: colors.textInverse }]}>
+                  No items match your interests
+                </Text>
+                <Text style={[styles.infoCardText, { color: 'rgba(0,0,0,0.7)' }]}>
+                  We couldn't find items in your selected categories, but don't worry! Swipe to explore all available items nearby.
+                </Text>
+                <View style={styles.infoCardDivider} />
+                <Text style={[styles.infoCardHint, { color: 'rgba(0,0,0,0.6)' }]}>
+                  Swipe left or right to dismiss and start browsing
+                </Text>
+                <TouchableOpacity
+                  style={[styles.infoCardButton, { backgroundColor: 'rgba(0,0,0,0.15)' }]}
+                  onPress={() => router.push('/settings')}
+                >
+                  <MaterialIcons name="tune" size={18} color={colors.textInverse} />
+                  <Text style={[styles.infoCardButtonText, { color: colors.textInverse }]}>
+                    Update Interests
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          ) : currentListing ? (
+            <>
+              {/* Card Image */}
+              <Image
+                source={{ uri: currentListing.images[0] || 'https://via.placeholder.com/400' }}
+                style={styles.cardImage}
+                resizeMode="cover"
+              />
+
+              {/* Gradient Overlays */}
+              <LinearGradient
+                colors={['rgba(0,0,0,0.3)', 'transparent', 'transparent']}
+                style={styles.topGradient}
+              />
+              <LinearGradient
+                colors={['transparent', 'rgba(0,0,0,0.2)', 'rgba(0,0,0,0.8)']}
+                style={styles.bottomGradient}
+              />
+
+              {/* Card Content */}
+              <View style={styles.cardContent}>
+                {/* Tags */}
+                <View style={styles.tagsRow}>
+                  <View style={styles.categoryTag}>
+                    <Text style={styles.categoryTagText}>
+                      {currentListing.category?.toUpperCase() || 'ITEM'}
+                    </Text>
+                  </View>
+                  <View style={styles.conditionTag}>
+                    <Text style={styles.conditionTagText}>
+                      {currentListing.condition || 'Good Condition'}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Title */}
+                <Text style={styles.cardTitle}>{currentListing.title}</Text>
+
+                {/* Location */}
+                <View style={styles.locationRow}>
+                  <MaterialIcons name="location-on" size={18} color="rgba(255,255,255,0.8)" />
+                  <Text style={styles.locationText}>
+                    {getLocationText(currentListing.location, 'Brooklyn, 2.5 miles away')}
+                  </Text>
+                </View>
+
+                {/* Watchers */}
+                <View style={styles.watchersRow}>
+                  <View style={styles.watcherAvatars}>
+                    <View style={[styles.watcherAvatar, { backgroundColor: '#64748b' }]}>
+                      <Text style={styles.watcherInitials}>JD</Text>
+                    </View>
+                    <View style={[styles.watcherAvatar, { backgroundColor: '#94a3b8', marginLeft: -8 }]}>
+                      <Text style={styles.watcherInitials}>MK</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.watchersText}>4 users watching this item</Text>
                 </View>
               </View>
-              <Text style={styles.watchersText}>4 users watching this item</Text>
-            </View>
-          </View>
+            </>
+          ) : null}
         </Animated.View>
 
             {/* Blocked Overlay when no item selected */}
@@ -603,7 +677,7 @@ export default function DiscoverScreen() {
                   <View style={styles.gridItemLocation}>
                     <MaterialIcons name="location-on" size={12} color={colors.textMuted} />
                     <Text style={[styles.gridItemLocationText, { color: colors.textMuted }]} numberOfLines={1}>
-                      {item.location || '2.5 mi away'}
+                      {getLocationText(item.location)}
                     </Text>
                   </View>
                 </View>
@@ -621,144 +695,48 @@ export default function DiscoverScreen() {
         </View>
       )}
 
-      {/* Map View */}
+      {/* Map View - requires development build for full functionality */}
       {viewMode === 'map' && (
         <View style={styles.mapViewContainer}>
-          {/* Map Area */}
-          <View style={styles.exploreMapContainer}>
-            {/* Satellite Map Background */}
-            <Image
-              source={{ uri: 'https://mt1.google.com/vt/lyrs=s&x=1206&y=1539&z=12' }}
-              style={styles.exploreMapImage}
-              resizeMode="cover"
-            />
-
-            {/* Current Location Marker */}
-            <View style={[styles.currentLocationMarker, { left: '50%', top: '50%' }]}>
-              <View style={[styles.currentLocationDot, { backgroundColor: colors.primary }]}>
-                <View style={[styles.currentLocationInner, { backgroundColor: colors.textInverse }]} />
-              </View>
-              <View style={[styles.currentLocationPulse, { borderColor: colors.primary }]} />
-            </View>
-
-            {/* Item Markers */}
-            {listings.slice(0, 8).map((item, index) => {
-              const pos = getItemMapPosition(item.id, index);
-              const isSelected = selectedMapItem?.id === item.id;
-              return (
-                <TouchableOpacity
-                  key={item.id}
-                  style={[
-                    styles.itemMarker,
-                    {
-                      left: `${pos.x * 100}%`,
-                      top: `${pos.y * 100}%`,
-                    },
-                    isSelected && styles.itemMarkerSelected,
-                  ]}
-                  onPress={() => setSelectedMapItem(isSelected ? null : item)}
-                  activeOpacity={0.8}
-                >
-                  <Image
-                    source={{ uri: item.images[0] || 'https://via.placeholder.com/50' }}
-                    style={[
-                      styles.itemMarkerImage,
-                      { borderColor: isSelected ? colors.primary : colors.surface },
-                    ]}
-                  />
-                  {isSelected && (
-                    <View style={[styles.itemMarkerArrow, { borderTopColor: colors.primary }]} />
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-
-            {/* Map Controls */}
-            <View style={styles.mapControls}>
-              <TouchableOpacity
-                style={[styles.mapControlButton, { backgroundColor: colors.surface }]}
-                onPress={() => setShowLocationModal(true)}
-              >
-                <MaterialIcons name="my-location" size={22} color={colors.text} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.mapControlButton, { backgroundColor: colors.surface }]}
-                onPress={() => setShowFilters(true)}
-              >
-                <MaterialIcons name="tune" size={22} color={colors.text} />
-              </TouchableOpacity>
-            </View>
-
-            {/* Location Badge */}
-            <View style={[styles.mapLocationBadge, { backgroundColor: colors.surface }]}>
-              <MaterialIcons name="location-on" size={16} color={colors.primary} />
-              <Text style={[styles.mapLocationText, { color: colors.text }]}>{currentLocation}</Text>
-            </View>
-          </View>
-
-          {/* Selected Item Card */}
-          {selectedMapItem && (
-            <View style={[styles.selectedItemCard, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
-              <TouchableOpacity
-                style={styles.selectedItemCardInner}
-                onPress={() => router.push(`/listing/${selectedMapItem.id}`)}
-                activeOpacity={0.8}
-              >
-                <Image
-                  source={{ uri: selectedMapItem.images[0] || 'https://via.placeholder.com/100' }}
-                  style={styles.selectedItemImage}
-                />
-                <View style={styles.selectedItemContent}>
-                  <Text style={[styles.selectedItemTitle, { color: colors.text }]} numberOfLines={1}>
-                    {selectedMapItem.title}
-                  </Text>
-                  <View style={[styles.selectedItemCategoryTag, { backgroundColor: colors.primary + '20' }]}>
-                    <Text style={[styles.selectedItemCategoryText, { color: colors.primary }]}>
-                      {selectedMapItem.category}
-                    </Text>
-                  </View>
-                  <View style={styles.selectedItemLocation}>
-                    <MaterialIcons name="location-on" size={14} color={colors.textMuted} />
-                    <Text style={[styles.selectedItemLocationText, { color: colors.textMuted }]}>
-                      {selectedMapItem.location || '2.5 mi away'}
-                    </Text>
-                  </View>
-                </View>
-                <View style={styles.selectedItemActions}>
-                  <TouchableOpacity
-                    style={[styles.selectedItemAction, { backgroundColor: colors.surface }]}
-                    onPress={() => toggleFavorite(selectedMapItem.id)}
-                  >
-                    <MaterialIcons
-                      name={favorites.has(selectedMapItem.id) ? 'favorite' : 'favorite-border'}
-                      size={20}
-                      color={favorites.has(selectedMapItem.id) ? Colors.error : colors.textMuted}
-                    />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.selectedItemAction, { backgroundColor: colors.primary }]}
-                    onPress={() => router.push(`/listing/${selectedMapItem.id}`)}
-                  >
-                    <MaterialIcons name="arrow-forward" size={20} color={colors.textInverse} />
-                  </TouchableOpacity>
-                </View>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.closeSelectedItem, { backgroundColor: colors.surface }]}
-                onPress={() => setSelectedMapItem(null)}
-              >
-                <MaterialIcons name="close" size={18} color={colors.textMuted} />
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {/* Items Count Badge */}
-          {!selectedMapItem && (
-            <View style={[styles.itemsCountBadge, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
-              <MaterialIcons name="inventory-2" size={18} color={colors.primary} />
-              <Text style={[styles.itemsCountText, { color: colors.text }]}>
-                {listings.length} items nearby
+          {isExpoGo ? (
+            /* Show dev build required message in Expo Go */
+            <View style={styles.devBuildRequired}>
+              <MaterialIcons name="map" size={64} color={colors.primary} />
+              <Text style={[styles.devBuildTitle, { color: colors.text }]}>
+                Interactive Map
               </Text>
+              <Text style={[styles.devBuildText, { color: colors.textMuted }]}>
+                The full map experience with item pins requires a development build.
+                Create one with EAS Build to explore items on an interactive map.
+              </Text>
+              <TouchableOpacity
+                style={[styles.devBuildButton, { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }]}
+                onPress={cycleViewMode}
+              >
+                <Text style={[styles.devBuildButtonText, { color: colors.text }]}>
+                  Switch to Swipe View
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            /* TODO: Full react-native-maps implementation for dev builds */
+            /* This will be implemented when creating the development build */
+            <View style={styles.devBuildRequired}>
+              <MaterialIcons name="map" size={64} color={colors.primary} />
+              <Text style={[styles.devBuildTitle, { color: colors.text }]}>
+                Map View Coming Soon
+              </Text>
+              <Text style={[styles.devBuildText, { color: colors.textMuted }]}>
+                The interactive map with item pins will be available in the next update.
+              </Text>
+              <TouchableOpacity
+                style={[styles.devBuildButton, { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }]}
+                onPress={cycleViewMode}
+              >
+                <Text style={[styles.devBuildButtonText, { color: colors.text }]}>
+                  Switch to Swipe View
+                </Text>
+              </TouchableOpacity>
             </View>
           )}
         </View>
@@ -1125,6 +1103,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  headerRightButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
   headerCenter: {
     alignItems: 'center',
   },
@@ -1404,6 +1386,64 @@ const styles = StyleSheet.create({
   },
   emptyActionButtonText: {
     fontSize: 16,
+    fontWeight: '600',
+  },
+  // Info Card styles (for no matching interests)
+  infoCardBackground: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  infoCardContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  infoCardIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  infoCardTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  infoCardText: {
+    fontSize: 16,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 20,
+  },
+  infoCardDivider: {
+    width: 60,
+    height: 3,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    borderRadius: 2,
+    marginBottom: 20,
+  },
+  infoCardHint: {
+    fontSize: 14,
+    textAlign: 'center',
+    fontStyle: 'italic',
+    marginBottom: 24,
+  },
+  infoCardButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 9999,
+  },
+  infoCardButtonText: {
+    fontSize: 15,
     fontWeight: '600',
   },
   modalOverlay: {
@@ -2044,5 +2084,104 @@ const styles = StyleSheet.create({
   selectItemButtonText: {
     fontSize: 16,
     fontWeight: '700',
+  },
+  // Map View Styles
+  mapNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  mapNoticeText: {
+    flex: 1,
+    fontSize: 13,
+  },
+  mapListContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 100,
+  },
+  mapListHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    marginBottom: 8,
+    borderBottomWidth: 1,
+  },
+  mapListHeaderText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  mapListItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 10,
+    gap: 12,
+  },
+  mapListItemImage: {
+    width: 70,
+    height: 70,
+    borderRadius: 10,
+    backgroundColor: '#1a1a1a',
+  },
+  mapListItemInfo: {
+    flex: 1,
+    gap: 4,
+  },
+  mapListItemTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    lineHeight: 20,
+  },
+  mapListItemCategoryTag: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  mapListItemCategoryText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  mapListItemMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  mapListItemLocation: {
+    fontSize: 12,
+  },
+  devBuildRequired: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+    gap: 16,
+  },
+  devBuildTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  devBuildText: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  devBuildButton: {
+    marginTop: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 9999,
+  },
+  devBuildButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
