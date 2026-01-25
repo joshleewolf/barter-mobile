@@ -94,7 +94,7 @@ const getLocationText = (location?: string | ListingLocation, fallback = '2.5 mi
 export default function DiscoverScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { user } = useAuth();
 
   // Persisted state - pass user.id so it reloads when user changes (login/logout)
@@ -430,30 +430,48 @@ export default function DiscoverScreen() {
           {/* Info Card - shown when no matching listings */}
           {showInfoCard && currentIndex === 0 ? (
             <>
-              <View style={[styles.infoCardBackground, { backgroundColor: colors.primary }]}>
-                <MaterialIcons name="category" size={80} color="rgba(0,0,0,0.15)" style={{ position: 'absolute', top: 40, right: 20 }} />
-                <MaterialIcons name="swipe" size={60} color="rgba(0,0,0,0.1)" style={{ position: 'absolute', bottom: 120, left: 20 }} />
+              <View style={[styles.infoCardBackground, {
+                backgroundColor: isDark ? colors.backgroundLight : '#FFFFFF',
+                borderColor: colors.border,
+              }]}>
+                {/* Decorative shapes */}
+                <View style={[styles.infoCardDecorCircle, { backgroundColor: `${colors.primary}15`, top: -30, right: -30 }]} />
+                <View style={[styles.infoCardDecorCircle, { backgroundColor: `${colors.primary}10`, bottom: -40, left: -40, width: 120, height: 120 }]} />
               </View>
               <View style={styles.infoCardContent}>
-                <View style={styles.infoCardIcon}>
-                  <MaterialIcons name="info-outline" size={32} color={colors.primary} />
+                {/* Icon container with glow effect */}
+                <View style={[styles.infoCardIconGlow, { backgroundColor: `${colors.primary}20` }]}>
+                  <View style={[styles.infoCardIcon, { backgroundColor: `${colors.primary}15` }]}>
+                    <MaterialIcons name="explore" size={36} color={colors.primary} />
+                  </View>
                 </View>
-                <Text style={[styles.infoCardTitle, { color: colors.textInverse }]}>
+
+                <Text style={[styles.infoCardTitle, { color: colors.text }]}>
                   No items match your interests
                 </Text>
-                <Text style={[styles.infoCardText, { color: 'rgba(0,0,0,0.7)' }]}>
+
+                <Text style={[styles.infoCardText, { color: colors.textSecondary }]}>
                   We couldn't find items in your selected categories, but don't worry! Swipe to explore all available items nearby.
                 </Text>
-                <View style={styles.infoCardDivider} />
-                <Text style={[styles.infoCardHint, { color: 'rgba(0,0,0,0.6)' }]}>
-                  Swipe left or right to dismiss and start browsing
-                </Text>
+
+                {/* Swipe hint with icons */}
+                <View style={styles.infoCardSwipeHint}>
+                  <View style={styles.infoCardSwipeIcons}>
+                    <MaterialIcons name="chevron-left" size={20} color={colors.textMuted} />
+                    <View style={[styles.infoCardSwipeLine, { backgroundColor: colors.border }]} />
+                    <MaterialIcons name="chevron-right" size={20} color={colors.textMuted} />
+                  </View>
+                  <Text style={[styles.infoCardHint, { color: colors.textMuted }]}>
+                    Swipe to dismiss and start browsing
+                  </Text>
+                </View>
+
                 <TouchableOpacity
-                  style={[styles.infoCardButton, { backgroundColor: 'rgba(0,0,0,0.15)' }]}
+                  style={[styles.infoCardButton, { backgroundColor: colors.primary }]}
                   onPress={() => router.push('/settings')}
                 >
-                  <MaterialIcons name="tune" size={18} color={colors.textInverse} />
-                  <Text style={[styles.infoCardButtonText, { color: colors.textInverse }]}>
+                  <MaterialIcons name="tune" size={18} color={isDark ? colors.background : '#FFFFFF'} />
+                  <Text style={[styles.infoCardButtonText, { color: isDark ? colors.background : '#FFFFFF' }]}>
                     Update Interests
                   </Text>
                 </TouchableOpacity>
@@ -1391,8 +1409,20 @@ const styles = StyleSheet.create({
   // Info Card styles (for no matching interests)
   infoCardBackground: {
     ...StyleSheet.absoluteFillObject,
-    borderRadius: 20,
+    borderRadius: 24,
     overflow: 'hidden',
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    elevation: 8,
+  },
+  infoCardDecorCircle: {
+    position: 'absolute',
+    width: 100,
+    height: 100,
+    borderRadius: 50,
   },
   infoCardContent: {
     flex: 1,
@@ -1400,47 +1430,73 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 32,
   },
-  infoCardIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: 'rgba(255,255,255,0.95)',
+  infoCardIconGlow: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 24,
+  },
+  infoCardIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   infoCardTitle: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '700',
     textAlign: 'center',
     marginBottom: 12,
+    letterSpacing: -0.3,
   },
   infoCardText: {
-    fontSize: 16,
+    fontSize: 15,
     textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 20,
+    lineHeight: 22,
+    marginBottom: 28,
+    paddingHorizontal: 8,
+  },
+  infoCardSwipeHint: {
+    alignItems: 'center',
+    marginBottom: 28,
+  },
+  infoCardSwipeIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  infoCardSwipeLine: {
+    width: 40,
+    height: 2,
+    borderRadius: 1,
+    marginHorizontal: 8,
   },
   infoCardDivider: {
     width: 60,
     height: 3,
-    backgroundColor: 'rgba(0,0,0,0.2)',
+    backgroundColor: 'rgba(0,0,0,0.1)',
     borderRadius: 2,
     marginBottom: 20,
   },
   infoCardHint: {
-    fontSize: 14,
+    fontSize: 13,
     textAlign: 'center',
-    fontStyle: 'italic',
-    marginBottom: 24,
   },
   infoCardButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
     borderRadius: 9999,
+    shadowColor: '#19E680',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   infoCardButtonText: {
     fontSize: 15,

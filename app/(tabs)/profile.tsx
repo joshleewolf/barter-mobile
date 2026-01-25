@@ -72,7 +72,10 @@ export default function ProfileScreen() {
       case 'Edit Profile':
         router.push('/edit-profile');
         break;
-      case 'Appearance':
+      case 'Interests':
+        router.push('/settings');
+        break;
+      case 'Theme':
         router.push('/settings');
         break;
       case 'Notifications':
@@ -98,11 +101,19 @@ export default function ProfileScreen() {
     }
   };
 
-  const menuItems = [
+  // Group menu items by category
+  const accountItems = [
     { icon: 'person-outline', label: 'Edit Profile' },
-    { icon: 'palette', label: 'Appearance' },
+    { icon: 'category', label: 'Interests' },
+  ];
+
+  const preferencesItems = [
+    { icon: 'palette', label: 'Theme' },
     { icon: 'notifications-none', label: 'Notifications' },
     { icon: 'lock-outline', label: 'Privacy & Security' },
+  ];
+
+  const supportItems = [
     { icon: 'help-outline', label: 'Help & Support' },
     { icon: 'info-outline', label: 'About' },
   ];
@@ -116,12 +127,6 @@ export default function ProfileScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={[styles.headerTitle, { color: colors.text }]}>Profile</Text>
-          <TouchableOpacity
-            style={[styles.headerButton, { backgroundColor: colors.surface }]}
-            onPress={() => router.push('/settings')}
-          >
-            <MaterialIcons name="settings" size={24} color={colors.text} />
-          </TouchableOpacity>
         </View>
 
         {/* Profile Card */}
@@ -267,40 +272,84 @@ export default function ProfileScreen() {
           )}
         </View>
 
-        {/* Settings Menu */}
-        <View style={styles.section}>
-          <View style={styles.sectionTitleRow}>
-            <MaterialIcons name="tune" size={20} color={colors.primary} />
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Settings</Text>
-          </View>
-
+        {/* Account Section */}
+        <View style={styles.menuSection}>
+          <Text style={[styles.menuSectionLabel, { color: colors.textMuted }]}>ACCOUNT</Text>
           <View style={[styles.menuCard, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
-            {menuItems.map((item, index) => (
+            {accountItems.map((item, index) => (
               <TouchableOpacity
                 key={item.label}
                 style={[
                   styles.menuItem,
-                  index < menuItems.length - 1 && [styles.menuItemBorder, { borderBottomColor: colors.border }],
+                  index < accountItems.length - 1 && [styles.menuItemBorder, { borderBottomColor: colors.border }],
                 ]}
                 activeOpacity={0.7}
                 onPress={() => handleMenuItemPress(item.label)}
               >
                 <View style={[styles.menuIconContainer, { backgroundColor: colors.surface }]}>
-                  <MaterialIcons name={item.icon as any} size={22} color={colors.textSecondary} />
+                  <MaterialIcons name={item.icon as any} size={20} color={colors.text} />
                 </View>
                 <Text style={[styles.menuText, { color: colors.text }]}>{item.label}</Text>
-                <MaterialIcons name="chevron-right" size={22} color={colors.textMuted} />
+                <MaterialIcons name="chevron-right" size={20} color={colors.textMuted} />
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* Preferences Section */}
+        <View style={styles.menuSection}>
+          <Text style={[styles.menuSectionLabel, { color: colors.textMuted }]}>PREFERENCES</Text>
+          <View style={[styles.menuCard, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+            {preferencesItems.map((item, index) => (
+              <TouchableOpacity
+                key={item.label}
+                style={[
+                  styles.menuItem,
+                  index < preferencesItems.length - 1 && [styles.menuItemBorder, { borderBottomColor: colors.border }],
+                ]}
+                activeOpacity={0.7}
+                onPress={() => handleMenuItemPress(item.label)}
+              >
+                <View style={[styles.menuIconContainer, { backgroundColor: colors.surface }]}>
+                  <MaterialIcons name={item.icon as any} size={20} color={colors.text} />
+                </View>
+                <Text style={[styles.menuText, { color: colors.text }]}>{item.label}</Text>
+                <MaterialIcons name="chevron-right" size={20} color={colors.textMuted} />
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* Support Section */}
+        <View style={styles.menuSection}>
+          <Text style={[styles.menuSectionLabel, { color: colors.textMuted }]}>SUPPORT</Text>
+          <View style={[styles.menuCard, { backgroundColor: colors.cardBg, borderColor: colors.border }]}>
+            {supportItems.map((item, index) => (
+              <TouchableOpacity
+                key={item.label}
+                style={[
+                  styles.menuItem,
+                  index < supportItems.length - 1 && [styles.menuItemBorder, { borderBottomColor: colors.border }],
+                ]}
+                activeOpacity={0.7}
+                onPress={() => handleMenuItemPress(item.label)}
+              >
+                <View style={[styles.menuIconContainer, { backgroundColor: colors.surface }]}>
+                  <MaterialIcons name={item.icon as any} size={20} color={colors.text} />
+                </View>
+                <Text style={[styles.menuText, { color: colors.text }]}>{item.label}</Text>
+                <MaterialIcons name="chevron-right" size={20} color={colors.textMuted} />
               </TouchableOpacity>
             ))}
           </View>
 
           {/* Logout Button */}
           <TouchableOpacity
-            style={styles.logoutButton}
+            style={[styles.logoutButton, { backgroundColor: `${colors.error}10`, borderColor: `${colors.error}20` }]}
             onPress={handleLogout}
             activeOpacity={0.7}
           >
-            <MaterialIcons name="logout" size={22} color={colors.error} />
+            <MaterialIcons name="logout" size={20} color={colors.error} />
             <Text style={[styles.logoutText, { color: colors.error }]}>Logout</Text>
           </TouchableOpacity>
         </View>
@@ -320,22 +369,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     marginBottom: 24,
   },
   headerTitle: {
     fontSize: 32,
     fontWeight: '800',
     letterSpacing: -0.5,
-  },
-  headerButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   profileCard: {
     borderRadius: 24,
@@ -445,22 +484,21 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   section: {
-    marginBottom: 32,
+    marginBottom: 28,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   sectionTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
   },
   addButton: {
@@ -563,6 +601,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
+  menuSection: {
+    marginBottom: 24,
+  },
+  menuSectionLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    marginBottom: 8,
+    marginLeft: 4,
+  },
   menuCard: {
     borderRadius: 16,
     overflow: 'hidden',
@@ -571,22 +619,22 @@ const styles = StyleSheet.create({
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    padding: 14,
   },
   menuItemBorder: {
     borderBottomWidth: 1,
   },
   menuIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
   menuText: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '500',
   },
   logoutButton: {
@@ -595,14 +643,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     marginTop: 16,
-    padding: 16,
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    padding: 14,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.2)',
   },
   logoutText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
   },
 });

@@ -18,7 +18,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../hooks/useAuth';
-import { Colors, Spacing, BorderRadius, FontSizes } from '../../constants/theme';
+import { useTheme } from '../../hooks/useTheme';
+import { Spacing, BorderRadius, FontSizes } from '../../constants/theme';
 
 interface Message {
   id: string;
@@ -48,6 +49,7 @@ export default function ChatScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
+  const { colors, isDark } = useTheme();
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -264,14 +266,14 @@ export default function ChatScreen() {
         <View>
           {showDate && (
             <View style={styles.dateHeaderContainer}>
-              <Text style={styles.dateHeader}>{formatDateHeader(item.createdAt)}</Text>
+              <Text style={[styles.dateHeader, { color: colors.textMuted, backgroundColor: colors.surface }]}>{formatDateHeader(item.createdAt)}</Text>
             </View>
           )}
           <View style={styles.systemMessageContainer}>
-            <View style={styles.systemMessageBox}>
-              <MaterialIcons name="handshake" size={28} color={Colors.primary} />
-              <Text style={styles.systemMessageTitle}>{item.content}</Text>
-              <Text style={styles.systemMessageSubtitle}>
+            <View style={[styles.systemMessageBox, { backgroundColor: `${colors.primary}15`, borderColor: `${colors.primary}30` }]}>
+              <MaterialIcons name="handshake" size={28} color={colors.primary} />
+              <Text style={[styles.systemMessageTitle, { color: colors.primary }]}>{item.content}</Text>
+              <Text style={[styles.systemMessageSubtitle, { color: colors.textMuted }]}>
                 Next step: Coordinate the exchange meeting location.
               </Text>
             </View>
@@ -284,7 +286,7 @@ export default function ChatScreen() {
       <View>
         {showDate && (
           <View style={styles.dateHeaderContainer}>
-            <Text style={styles.dateHeader}>{formatDateHeader(item.createdAt)}</Text>
+            <Text style={[styles.dateHeader, { color: colors.textMuted, backgroundColor: colors.surface }]}>{formatDateHeader(item.createdAt)}</Text>
           </View>
         )}
         <View style={[styles.messageRow, isOwn && styles.messageRowOwn]}>
@@ -300,11 +302,11 @@ export default function ChatScreen() {
               )}
             </View>
           )}
-          <View style={[styles.messageBubble, isOwn && styles.messageBubbleOwn]}>
-            <Text style={[styles.messageText, isOwn && styles.messageTextOwn]}>
+          <View style={[styles.messageBubble, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)' }, isOwn && { backgroundColor: colors.primary }]}>
+            <Text style={[styles.messageText, { color: colors.text }, isOwn && { color: isDark ? colors.background : colors.textInverse, fontWeight: '500' }]}>
               {item.content}
             </Text>
-            <Text style={[styles.messageTime, isOwn && styles.messageTimeOwn]}>
+            <Text style={[styles.messageTime, { color: colors.textMuted }, isOwn && { color: isDark ? 'rgba(17, 33, 25, 0.5)' : 'rgba(255, 255, 255, 0.7)' }]}>
               {formatTime(item.createdAt)}
             </Text>
           </View>
@@ -328,20 +330,23 @@ export default function ChatScreen() {
               <View style={styles.stepDotContainer}>
                 <View style={[
                   styles.stepDot,
-                  isActive && styles.stepDotActive,
-                  isCurrent && styles.stepDotCurrent,
+                  { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)' },
+                  isActive && { backgroundColor: colors.primary },
+                  isCurrent && { shadowColor: colors.primary, shadowOpacity: 0.5, shadowRadius: 8, elevation: 4 },
                 ]} />
               </View>
               <Text style={[
                 styles.stepLabel,
-                isActive && styles.stepLabelActive,
+                { color: isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)' },
+                isActive && { color: colors.primary },
               ]}>
                 {step}
               </Text>
               {!isLast && (
                 <View style={[
                   styles.stepLine,
-                  isActive && styles.stepLineActive,
+                  { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' },
+                  isActive && { backgroundColor: colors.primary },
                 ]} />
               )}
             </View>
@@ -353,45 +358,45 @@ export default function ChatScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={[styles.container, { paddingTop: insets.top }]}
+      style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={0}
     >
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <View style={styles.headerLeft}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <MaterialIcons name="chevron-left" size={28} color={Colors.text} />
+            <MaterialIcons name="chevron-left" size={28} color={colors.text} />
           </TouchableOpacity>
           <View style={styles.userInfo}>
-            <View style={styles.avatarWrapper}>
+            <View style={[styles.avatarWrapper, { borderColor: colors.primary }]}>
               <Image
                 source={{ uri: otherUser.avatar || 'https://via.placeholder.com/40' }}
                 style={styles.headerAvatar}
               />
             </View>
             <View>
-              <Text style={styles.userName}>{otherUser.name}</Text>
-              <Text style={styles.userStatus}>
+              <Text style={[styles.userName, { color: colors.text }]}>{otherUser.name}</Text>
+              <Text style={[styles.userStatus, { color: colors.primary }]}>
                 {otherUser.online ? 'Online' : 'Offline'}
               </Text>
             </View>
           </View>
         </View>
-        <TouchableOpacity style={styles.moreButton} onPress={handleMoreOptions}>
-          <MaterialIcons name="more-horiz" size={24} color={Colors.text} />
+        <TouchableOpacity style={[styles.moreButton, { backgroundColor: colors.surface }]} onPress={handleMoreOptions}>
+          <MaterialIcons name="more-horiz" size={24} color={colors.text} />
         </TouchableOpacity>
       </View>
 
       {/* Trade Status Section */}
       {tradeInfo && (
-        <View style={styles.tradeStatusSection}>
+        <View style={[styles.tradeStatusSection, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)', borderBottomColor: colors.border }]}>
           <View style={styles.tradeStatusHeader}>
-            <Text style={styles.tradeStatusTitle}>
-              Trade Status: <Text style={styles.tradeStatusValue}>Pending</Text>
+            <Text style={[styles.tradeStatusTitle, { color: colors.text }]}>
+              Trade Status: <Text style={{ color: colors.primary }}>Pending</Text>
             </Text>
             <View style={styles.stepBadge}>
-              <Text style={styles.stepBadgeText}>STEP {tradeInfo.currentStep} OF 4</Text>
+              <Text style={[styles.stepBadgeText, { color: colors.primary }]}>STEP {tradeInfo.currentStep} OF 4</Text>
             </View>
           </View>
           {renderStepper()}
@@ -401,27 +406,27 @@ export default function ChatScreen() {
       {/* Pinned Trade Card */}
       {tradeInfo && (
         <View style={styles.tradeCardContainer}>
-          <View style={styles.tradeCard}>
+          <View style={[styles.tradeCard, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : colors.cardBg, borderColor: colors.border }]}>
             <View style={styles.tradeImages}>
               <Image
                 source={{ uri: tradeInfo.yourItem.image }}
-                style={[styles.tradeImage, styles.tradeImageBack]}
+                style={[styles.tradeImage, styles.tradeImageBack, { borderColor: colors.background }]}
               />
               <Image
                 source={{ uri: tradeInfo.theirItem.image }}
-                style={[styles.tradeImage, styles.tradeImageFront]}
+                style={[styles.tradeImage, styles.tradeImageFront, { borderColor: colors.background }]}
               />
             </View>
             <View style={styles.tradeCardInfo}>
-              <Text style={styles.tradeCardTitle}>{tradeInfo.yourItem.title}</Text>
-              <Text style={styles.tradeCardSubtitle}>
-                for <Text style={styles.tradeCardHighlight}>
+              <Text style={[styles.tradeCardTitle, { color: colors.text }]}>{tradeInfo.yourItem.title}</Text>
+              <Text style={[styles.tradeCardSubtitle, { color: colors.textMuted }]}>
+                for <Text style={{ color: colors.primary, fontWeight: '600' }}>
                   {tradeInfo.theirItem.title} + ${tradeInfo.cashAmount}
                 </Text>
               </Text>
             </View>
             <TouchableOpacity style={styles.viewButton} onPress={handleViewTradeDetails}>
-              <MaterialIcons name="visibility" size={18} color={Colors.primary} />
+              <MaterialIcons name="visibility" size={18} color={colors.primary} />
             </TouchableOpacity>
           </View>
         </View>
@@ -437,21 +442,21 @@ export default function ChatScreen() {
         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No messages yet. Say hi!</Text>
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No messages yet. Say hi!</Text>
           </View>
         }
       />
 
       {/* Input */}
-      <View style={[styles.inputContainer, { paddingBottom: insets.bottom + Spacing.sm }]}>
-        <TouchableOpacity style={styles.addButton} onPress={handleAddAttachment}>
-          <MaterialIcons name="add" size={26} color={Colors.textMuted} />
+      <View style={[styles.inputContainer, { paddingBottom: insets.bottom + Spacing.sm, borderTopColor: colors.border, backgroundColor: colors.background }]}>
+        <TouchableOpacity style={[styles.addButton, { backgroundColor: colors.surface }]} onPress={handleAddAttachment}>
+          <MaterialIcons name="add" size={26} color={colors.textMuted} />
         </TouchableOpacity>
         <View style={styles.inputWrapper}>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.surface, color: colors.text }]}
             placeholder="Type a message..."
-            placeholderTextColor={Colors.textMuted}
+            placeholderTextColor={colors.textMuted}
             value={newMessage}
             onChangeText={setNewMessage}
             multiline
@@ -459,11 +464,11 @@ export default function ChatScreen() {
           />
         </View>
         <TouchableOpacity
-          style={[styles.sendButton, !newMessage.trim() && styles.sendButtonDisabled]}
+          style={[styles.sendButton, { backgroundColor: colors.primary }, !newMessage.trim() && { backgroundColor: colors.surface, shadowOpacity: 0 }]}
           onPress={handleSend}
           disabled={!newMessage.trim() || sending}
         >
-          <MaterialIcons name="send" size={20} color={Colors.background} />
+          <MaterialIcons name="send" size={20} color={isDark ? colors.background : colors.textInverse} />
         </TouchableOpacity>
       </View>
 
@@ -479,9 +484,9 @@ export default function ChatScreen() {
           activeOpacity={1}
           onPress={() => setShowAttachments(false)}
         >
-          <View style={styles.attachmentModalContent}>
-            <View style={styles.attachmentModalHandle} />
-            <Text style={styles.attachmentModalTitle}>Add Attachment</Text>
+          <View style={[styles.attachmentModalContent, { backgroundColor: isDark ? colors.backgroundLight : colors.cardBg }]}>
+            <View style={[styles.attachmentModalHandle, { backgroundColor: colors.border }]} />
+            <Text style={[styles.attachmentModalTitle, { color: colors.text }]}>Add Attachment</Text>
             <View style={styles.attachmentOptions}>
               <TouchableOpacity
                 style={styles.attachmentOption}
@@ -499,7 +504,7 @@ export default function ChatScreen() {
                 <View style={[styles.attachmentIconContainer, { backgroundColor: 'rgba(59, 130, 246, 0.15)' }]}>
                   <MaterialIcons name="camera-alt" size={24} color="#3b82f6" />
                 </View>
-                <Text style={styles.attachmentLabel}>Camera</Text>
+                <Text style={[styles.attachmentLabel, { color: colors.textSecondary }]}>Camera</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.attachmentOption}
@@ -517,7 +522,7 @@ export default function ChatScreen() {
                 <View style={[styles.attachmentIconContainer, { backgroundColor: 'rgba(25, 230, 128, 0.15)' }]}>
                   <MaterialIcons name="photo-library" size={24} color="#19e680" />
                 </View>
-                <Text style={styles.attachmentLabel}>Gallery</Text>
+                <Text style={[styles.attachmentLabel, { color: colors.textSecondary }]}>Gallery</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.attachmentOption}
@@ -529,7 +534,7 @@ export default function ChatScreen() {
                 <View style={[styles.attachmentIconContainer, { backgroundColor: 'rgba(245, 158, 11, 0.15)' }]}>
                   <MaterialIcons name="location-on" size={24} color="#f59e0b" />
                 </View>
-                <Text style={styles.attachmentLabel}>Location</Text>
+                <Text style={[styles.attachmentLabel, { color: colors.textSecondary }]}>Location</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -542,7 +547,6 @@ export default function ChatScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -551,7 +555,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
   headerLeft: {
     flexDirection: 'row',
@@ -571,7 +574,6 @@ const styles = StyleSheet.create({
   },
   avatarWrapper: {
     borderWidth: 2,
-    borderColor: Colors.primary,
     borderRadius: 22,
     padding: 2,
   },
@@ -583,26 +585,21 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: FontSizes.md,
     fontWeight: '700',
-    color: Colors.text,
   },
   userStatus: {
     fontSize: FontSizes.xs,
-    color: Colors.primary,
     fontWeight: '500',
   },
   moreButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: Colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   tradeStatusSection: {
     padding: Spacing.md,
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
   tradeStatusHeader: {
     flexDirection: 'row',
@@ -613,10 +610,8 @@ const styles = StyleSheet.create({
   tradeStatusTitle: {
     fontSize: FontSizes.lg,
     fontWeight: '700',
-    color: Colors.text,
   },
   tradeStatusValue: {
-    color: Colors.primary,
   },
   stepBadge: {
     backgroundColor: 'rgba(25, 230, 128, 0.15)',
@@ -627,7 +622,6 @@ const styles = StyleSheet.create({
   stepBadgeText: {
     fontSize: 10,
     fontWeight: '700',
-    color: Colors.primary,
     letterSpacing: 0.5,
   },
   stepperContainer: {
@@ -649,27 +643,19 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
   stepDotActive: {
-    backgroundColor: Colors.primary,
   },
   stepDotCurrent: {
-    shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-    elevation: 4,
   },
   stepLabel: {
     fontSize: 9,
     fontWeight: '700',
-    color: 'rgba(255, 255, 255, 0.4)',
     letterSpacing: 0.5,
     textAlign: 'center',
   },
   stepLabelActive: {
-    color: Colors.primary,
   },
   stepLine: {
     position: 'absolute',
@@ -677,10 +663,8 @@ const styles = StyleSheet.create({
     left: '55%',
     right: '-45%',
     height: 2,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
   stepLineActive: {
-    backgroundColor: Colors.primary,
   },
   tradeCardContainer: {
     padding: Spacing.md,
@@ -688,9 +672,7 @@ const styles = StyleSheet.create({
   tradeCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderWidth: 1,
-    borderColor: Colors.border,
     borderRadius: BorderRadius.lg,
     padding: Spacing.sm,
   },
@@ -703,7 +685,6 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: BorderRadius.md,
     borderWidth: 2,
-    borderColor: Colors.background,
   },
   tradeImageBack: {
     zIndex: 1,
@@ -718,15 +699,12 @@ const styles = StyleSheet.create({
   tradeCardTitle: {
     fontSize: FontSizes.sm,
     fontWeight: '700',
-    color: Colors.text,
   },
   tradeCardSubtitle: {
     fontSize: FontSizes.xs,
-    color: Colors.textMuted,
     marginTop: 2,
   },
   tradeCardHighlight: {
-    color: Colors.primary,
     fontWeight: '600',
   },
   viewButton: {
@@ -748,8 +726,6 @@ const styles = StyleSheet.create({
   dateHeader: {
     fontSize: 10,
     fontWeight: '700',
-    color: Colors.textMuted,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.round,
@@ -779,42 +755,34 @@ const styles = StyleSheet.create({
     height: 32,
   },
   messageBubble: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: BorderRadius.lg,
     borderBottomLeftRadius: 4,
     padding: Spacing.md,
     flex: 1,
   },
   messageBubbleOwn: {
-    backgroundColor: Colors.primary,
     borderBottomLeftRadius: BorderRadius.lg,
     borderBottomRightRadius: 4,
   },
   messageText: {
     fontSize: FontSizes.sm,
-    color: Colors.text,
     lineHeight: 20,
   },
   messageTextOwn: {
-    color: Colors.background,
     fontWeight: '500',
   },
   messageTime: {
     fontSize: 10,
-    color: Colors.textMuted,
     marginTop: Spacing.xs,
   },
   messageTimeOwn: {
-    color: 'rgba(17, 33, 25, 0.5)',
   },
   systemMessageContainer: {
     alignItems: 'center',
     paddingVertical: Spacing.md,
   },
   systemMessageBox: {
-    backgroundColor: 'rgba(25, 230, 128, 0.1)',
     borderWidth: 1,
-    borderColor: 'rgba(25, 230, 128, 0.2)',
     borderRadius: BorderRadius.lg,
     padding: Spacing.md,
     alignItems: 'center',
@@ -823,13 +791,11 @@ const styles = StyleSheet.create({
   systemMessageTitle: {
     fontSize: FontSizes.sm,
     fontWeight: '700',
-    color: Colors.primary,
     textAlign: 'center',
     marginTop: Spacing.sm,
   },
   systemMessageSubtitle: {
     fontSize: FontSizes.xs,
-    color: Colors.textMuted,
     textAlign: 'center',
     marginTop: Spacing.xs,
   },
@@ -841,22 +807,18 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: FontSizes.md,
-    color: Colors.textSecondary,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: Spacing.md,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    backgroundColor: Colors.background,
     gap: Spacing.sm,
   },
   addButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -864,29 +826,24 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   input: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderRadius: BorderRadius.round,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     fontSize: FontSizes.sm,
-    color: Colors.text,
     maxHeight: 100,
   },
   sendButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
   },
   sendButtonDisabled: {
-    backgroundColor: Colors.surface,
     shadowOpacity: 0,
   },
   attachmentModalOverlay: {
@@ -895,7 +852,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   attachmentModalContent: {
-    backgroundColor: Colors.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
@@ -904,7 +860,6 @@ const styles = StyleSheet.create({
   attachmentModalHandle: {
     width: 40,
     height: 4,
-    backgroundColor: 'rgba(255,255,255,0.2)',
     borderRadius: 2,
     alignSelf: 'center',
     marginBottom: 20,
@@ -912,7 +867,6 @@ const styles = StyleSheet.create({
   attachmentModalTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.text,
     textAlign: 'center',
     marginBottom: 24,
   },
@@ -933,7 +887,6 @@ const styles = StyleSheet.create({
   },
   attachmentLabel: {
     fontSize: 12,
-    color: Colors.textSecondary,
     fontWeight: '500',
   },
 });

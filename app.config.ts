@@ -56,6 +56,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'app.barter.mobile',
+      infoPlist: {
+        ITSAppUsesNonExemptEncryption: false,
+      },
     },
     android: {
       adaptiveIcon: {
@@ -75,7 +78,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       supabaseUrl: envConfig.supabaseUrl,
       supabaseAnonKey: envConfig.supabaseAnonKey,
       eas: {
-        projectId: process.env.EAS_PROJECT_ID,
+        projectId: '2f067161-0df7-4f67-987b-3fb29f2db2cf',
       },
     },
     plugins: ['expo-router', 'expo-secure-store'],
